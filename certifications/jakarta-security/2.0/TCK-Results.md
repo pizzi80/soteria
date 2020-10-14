@@ -8,7 +8,7 @@ following is a summary of the TCK results for releases of Jakarta Security.
 # Eclipse Soteria 2.0.0, Certification Summary
 
 - Product Name, Version and download URL (if applicable): <br/>
-  Eclipse Soteria 2.0.0 provides Jakarta Security API 2.0
+  [Eclipse Soteria 2.0.0](https://github.com/eclipse-ee4j/soteria/releases/download/2.0.0-M3-RELEASE/jakarta.security.enterprise-2.0.0-M3.jar) uses Jakarta Security API 2.0
   [Eclipse Soteria Project](https://github.com/eclipse-ee4j/soteria)
 - Specification Name, Version and download URL: <br/>
   [Jakarta Security 2.0](https://jakarta.ee/specifications/security/2.0)
