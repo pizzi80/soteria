@@ -1,6 +1,6 @@
 # Soteria
 
-Java EE Security (JSR 375) RI
+Jakarta Security implementation
 
 [Website](https://eclipse-ee4j.github.io/soteria)
 
