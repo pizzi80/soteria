@@ -62,7 +62,7 @@ public class SamRegistrationInstaller implements ServletContainerInitializer, Se
         // there's an enabled bean
 
         try {
-            BeanManager beanManager = CDI.current().getBeanManager(); //CdiUtils.getBeanManager();
+            CDI.current().getBeanManager();
 
             if (logger.isLoggable(INFO)) {
                 String version = getClass().getPackage().getImplementationVersion();
