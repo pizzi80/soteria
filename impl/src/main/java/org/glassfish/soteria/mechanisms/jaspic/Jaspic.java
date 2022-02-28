@@ -49,7 +49,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * @author Arjan Tijms
  *
  */
-public final class Jaspic {
+public enum Jaspic { INSTANCE;
 	
 	public static final String IS_AUTHENTICATION = "org.glassfish.soteria.security.message.request.authentication";
 	public static final String IS_AUTHENTICATION_FROM_FILTER = "org.glassfish.soteria.security.message.request.authenticationFromFilter";
@@ -71,8 +71,7 @@ public final class Jaspic {
 	private static final String IS_MANDATORY = "jakarta.security.auth.message.MessagePolicy.isMandatory";
 	private static final String REGISTER_SESSION = "jakarta.servlet.http.registerSession";
 
-	private Jaspic() {}
-	
+
 	public static boolean authenticate(HttpServletRequest request, HttpServletResponse response, AuthenticationParameters authParameters) {
 		try {
 		    // JASPIC 1.1 does not have any way to distinguish between a
@@ -119,12 +118,10 @@ public final class Jaspic {
 
 	public static void cleanSubject(Subject subject) {
 	    if (subject != null) {
-	        AccessController.doPrivileged(new PrivilegedAction<Void>() {
-	            public Void run() {
-	                subject.getPrincipals().clear();
-	                return null;
-	            }
-	        });
+	        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+				subject.getPrincipals().clear();
+				return null;
+			});
 	    }
 	}
 
@@ -245,15 +242,12 @@ public final class Jaspic {
 	public static String registerServerAuthModule(ServerAuthModule serverAuthModule, ServletContext servletContext) {
 		
 	    // Register the factory-factory-factory for the SAM
-	    String registrationId = AccessController.doPrivileged(new PrivilegedAction<String>() {
-	        public String run() {
-	            return AuthConfigFactory.getFactory().registerConfigProvider(
-	                    new DefaultAuthConfigProvider(serverAuthModule),
-	                    "HttpServlet", 
-	                    getAppContextID(servletContext), 
-	                    "Default single SAM authentication config provider");
-	        }
-	    });
+	    String registrationId = AccessController.doPrivileged( (PrivilegedAction<String>) () -> AuthConfigFactory.getFactory().registerConfigProvider(
+				new DefaultAuthConfigProvider(serverAuthModule),
+				"HttpServlet",
+				getAppContextID(servletContext),
+				"Default single SAM authentication config provider")
+		);
 		
 		// Remember the registration ID returned by the factory, so we can unregister the JASPIC module when the web module
 		// is undeployed. JASPIC being the low level API that it is won't do this automatically.
@@ -270,13 +264,9 @@ public final class Jaspic {
 	 */
 	public static void deregisterServerAuthModule(ServletContext servletContext) {
 		String registrationId = (String) servletContext.getAttribute(CONTEXT_REGISTRATION_ID);
-		if (!isEmpty(registrationId)) {
-			AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
-			    public Boolean run() {
-			        return AuthConfigFactory.getFactory().removeRegistration(registrationId);
-			    }
-			});
-		}
+		if (!isEmpty(registrationId)) AccessController.doPrivileged(
+				(PrivilegedAction<Boolean>) () -> AuthConfigFactory.getFactory().removeRegistration(registrationId)
+		);
 	}
 	
 	

@@ -16,32 +16,16 @@
 
 package org.glassfish.soteria.authorization;
 
-import static java.security.Policy.getPolicy;
-import static java.util.Collections.list;
-import static org.glassfish.soteria.authorization.EJB.getCurrentEJBName;
-import static org.glassfish.soteria.authorization.EJB.getEJBContext;
+import jakarta.security.jacc.*;
 
-import java.security.AccessController;
-import java.security.CodeSource;
-import java.security.Permission;
-import java.security.PermissionCollection;
-import java.security.Policy;
-import java.security.Principal;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.security.ProtectionDomain;
+import javax.security.auth.Subject;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.ejb.EJBContext;
-import javax.security.auth.Subject;
-import jakarta.security.jacc.EJBRoleRefPermission;
-import jakarta.security.jacc.PolicyContext;
-import jakarta.security.jacc.PolicyContextException;
-import jakarta.security.jacc.WebResourcePermission;
-import jakarta.security.jacc.WebRoleRefPermission;
+import static java.security.Policy.getPolicy;
+import static java.util.Collections.list;
 
 public class JACC {
 
@@ -59,24 +43,24 @@ public class JACC {
             return true;
         }
         
-        EJBContext ejbContext = getEJBContext();
-        
-        if (ejbContext != null) {
-            
-            // We're called from an EJB
-            
-            // To ask for the permission, get the EJB name first.
-            // Unlike the Servlet container there's no automatic mapping
-            // to a global ("") name.
-            String ejbName = getCurrentEJBName(ejbContext);
-            if (ejbName != null) {
-                return hasPermission(subject, new EJBRoleRefPermission(ejbName, role));
-            }
-            
-            // EJB name not supported for current container, fallback to going fully through
-            // ejbContext
-            return ejbContext.isCallerInRole(role);
-        }
+//        EJBContext ejbContext = getEJBContext();
+//
+//        if (ejbContext != null) {
+//
+//            // We're called from an EJB
+//
+//            // To ask for the permission, get the EJB name first.
+//            // Unlike the Servlet container there's no automatic mapping
+//            // to a global ("") name.
+//            String ejbName = getCurrentEJBName(ejbContext);
+//            if (ejbName != null) {
+//                return hasPermission(subject, new EJBRoleRefPermission(ejbName, role));
+//            }
+//
+//            // EJB name not supported for current container, fallback to going fully through
+//            // ejbContext
+//            return ejbContext.isCallerInRole(role);
+//        }
         
         return false;
     }

@@ -40,10 +40,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.security.auth.Subject;
 
-import org.glassfish.soteria.authorization.EJB;
 import org.glassfish.soteria.authorization.JACC;
 
-import jakarta.ejb.EJBContext;
 import jakarta.security.enterprise.CallerPrincipal;
 import jakarta.security.jacc.PolicyContext;
 import jakarta.security.jacc.PolicyContextException;
@@ -441,11 +439,12 @@ public class SubjectParser {
         }
 
         // Check for EJB
-        EJBContext ejbContext = EJB.getEJBContext();
-        if (ejbContext != null) {
-            // The EJB returned value must be verified for its "unauthenticated name" since it's vendor specific
-            return getVendorCallerPrincipal(ejbContext.getCallerPrincipal(), true);
-        }
+        // Removed
+//        EJBContext ejbContext = EJB.getEJBContext();
+//        if (ejbContext != null) {
+//            // The EJB returned value must be verified for its "unauthenticated name" since it's vendor specific
+//            return getVendorCallerPrincipal(ejbContext.getCallerPrincipal(), true);
+//        }
 
         for (Principal principal : principals) {
             // Do some checks to determine it from vendor specific data

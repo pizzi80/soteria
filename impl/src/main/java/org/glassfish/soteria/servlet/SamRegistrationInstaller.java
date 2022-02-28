@@ -16,26 +16,29 @@
 
 package org.glassfish.soteria.servlet;
 
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.INFO;
+import static org.glassfish.soteria.Utils.isEmpty;
+import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.deregisterServerAuthModule;
+import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.registerServerAuthModule;
+
+import java.util.Set;
+import java.util.logging.Logger;
+
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletException;
+
 import org.glassfish.soteria.cdi.CdiExtension;
+import org.glassfish.soteria.cdi.CdiUtils;
 import org.glassfish.soteria.cdi.spi.CDIPerRequestInitializer;
 import org.glassfish.soteria.cdi.spi.impl.LibertyCDIPerRequestInitializer;
 import org.glassfish.soteria.mechanisms.jaspic.HttpBridgeServerAuthModule;
 import org.glassfish.soteria.mechanisms.jaspic.Jaspic;
-
-import java.util.Set;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.FINEST;
-import static java.util.logging.Level.INFO;
-import static org.glassfish.soteria.Utils.isEmpty;
-import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.deregisterServerAuthModule;
-import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.registerServerAuthModule;
 
 /**
  * If an HttpAuthenticationMechanism implementation has been found on the classpath, this 
@@ -62,7 +65,7 @@ public class SamRegistrationInstaller implements ServletContainerInitializer, Se
         // there's an enabled bean
 
         try {
-            CDI.current().getBeanManager();
+            CDI.current().getBeanManager(); //CdiUtils.getBeanManager();
 
             if (logger.isLoggable(INFO)) {
                 String version = getClass().getPackage().getImplementationVersion();
@@ -110,13 +113,11 @@ public class SamRegistrationInstaller implements ServletContainerInitializer, Se
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         // noop
-        logger.info("contextInitialized");
     }
     
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         deregisterServerAuthModule(sce.getServletContext());
-        logger.info("contextDestroyed");
     }
     
 }
