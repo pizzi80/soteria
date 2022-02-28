@@ -16,14 +16,14 @@
     SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
 
 -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-       <groupId>com.given2.soteria</groupId>
+       <groupId>org.glassfish.soteria</groupId>
        <artifactId>parent</artifactId>
        <version>2.0.2-SNAPSHOT</version>
-       <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>jakarta.security.enterprise</artifactId>
@@ -87,7 +87,7 @@
                     <archive>
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                         <manifestEntries>
-                            <Automatic-Module-Name>com.given2.soteria</Automatic-Module-Name>
+                            <Automatic-Module-Name>org.glassfish.soteria</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>

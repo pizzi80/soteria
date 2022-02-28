@@ -23,10 +23,9 @@
    <modelVersion>4.0.0</modelVersion>
 
    <parent>
-       <groupId>com.given2.soteria</groupId>
+       <groupId>org.glassfish.soteria</groupId>
        <artifactId>spi</artifactId>
        <version>2.0.2-SNAPSHOT</version>
-       <relativePath>../pom.xml</relativePath>
     </parent>
 
    <artifactId>spi-bean-decorator</artifactId>
