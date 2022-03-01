@@ -16,38 +16,29 @@
 
 package org.glassfish.soteria.authorization.spi.impl;
 
+import jakarta.security.enterprise.CallerPrincipal;
+import jakarta.security.jacc.PolicyContext;
+import jakarta.security.jacc.PolicyContextException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.glassfish.soteria.authorization.JACC;
+
+import javax.security.auth.Subject;
+import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.security.Principal;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.list;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.security.Principal;
-// import java.security.acl.Group;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+public class SubjectParser implements Serializable {
 
-import javax.security.auth.Subject;
-
-import org.glassfish.soteria.authorization.JACC;
-
-import jakarta.security.enterprise.CallerPrincipal;
-import jakarta.security.jacc.PolicyContext;
-import jakarta.security.jacc.PolicyContextException;
-import jakarta.servlet.http.HttpServletRequest;
-
-public class SubjectParser {
+    private static final long serialVersionUID = -7008577639483461696L;
 
     private static Object geronimoPolicyConfigurationFactoryInstance;
     private static ConcurrentMap<String, Map<Principal, Set<String>>> geronimoContextToRoleMapping;
@@ -116,15 +107,15 @@ public class SubjectParser {
         // Try to get a hold of the proprietary role mapper of each known
         // AS. Sad that this is needed :(
         if (tryGlassFish(contextID,allDeclaredRoles)) {
-
+            return;
         } else if (tryJBoss()) {
-
+            return;
         } else if (tryLiberty()) {
-
+            return;
         } else if (tryWebLogic(contextID,allDeclaredRoles)) {
-
+            return;
         } else if (tryGeronimo(contextID,allDeclaredRoles)) {
-
+            return;
         } else {
             oneToOneMapping = true;
         }

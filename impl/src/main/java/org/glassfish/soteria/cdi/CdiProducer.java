@@ -16,10 +16,11 @@
 
 package org.glassfish.soteria.cdi;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
-import static java.util.Collections.unmodifiableSet;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.PassivationCapable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -27,11 +28,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.enterprise.inject.spi.Bean;
-import jakarta.enterprise.inject.spi.InjectionPoint;
-import jakarta.enterprise.inject.spi.PassivationCapable;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 
 // May be replaced by CDI 2.0 bean builder API when ready.
 // See http://weld.cdi-spec.org/news/2015/02/25/weld-300Alpha5/#_bean_builder_api
@@ -40,8 +38,8 @@ public class CdiProducer<T> implements Bean<T>, PassivationCapable {
     private String id = this.getClass().getName();
     private String name;
     private Class<?> beanClass = Object.class;
-    private Set<Type> types = singleton(Object.class);
-    private Set<Annotation> qualifiers = unmodifiableSet(asSet(new DefaultAnnotationLiteral(), new AnyAnnotationLiteral()));
+    private Set<Type> types = Set.of(Object.class);
+    private Set<Annotation> qualifiers = Set.of(new DefaultAnnotationLiteral(), new AnyAnnotationLiteral());
     private Class<? extends Annotation> scope = Dependent.class;
     private Function<CreationalContext<T>, T> create;
     
@@ -124,7 +122,7 @@ public class CdiProducer<T> implements Bean<T>, PassivationCapable {
     }
     
     protected CdiProducer<T> types(Type... types) {
-        this.types = asSet(types);
+        this.types = Set.of(types);
         return this;
     }
     
@@ -135,7 +133,7 @@ public class CdiProducer<T> implements Bean<T>, PassivationCapable {
     }
     
     protected CdiProducer<T> qualifiers(Annotation... qualifiers) {
-        this.qualifiers = asSet(qualifiers);
+        this.qualifiers = Set.of(qualifiers);
         return this;
     }
     
@@ -148,11 +146,6 @@ public class CdiProducer<T> implements Bean<T>, PassivationCapable {
     protected CdiProducer<T> addToId(Object object) {
         id = id + " " + object.toString();
         return this;
-    }
-    
-    @SafeVarargs
-    protected static <T> Set<T> asSet(T... a) {
-        return new HashSet<>(asList(a));
     }
     
 }

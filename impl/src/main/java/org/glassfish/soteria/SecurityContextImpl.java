@@ -39,7 +39,7 @@ import org.glassfish.soteria.mechanisms.jaspic.Jaspic;
 
 public class SecurityContextImpl implements SecurityContext, Serializable {
     
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 4741091906552051471L;
     
     private CallerDetailsResolver callerDetailsResolver;
     private ResourceAccessResolver resourceAccessResolver;

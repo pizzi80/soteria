@@ -16,12 +16,15 @@
 
 package org.glassfish.soteria;
 
-import java.security.Principal;
-
 import jakarta.security.enterprise.CallerPrincipal;
 
-public class WrappingCallerPrincipal extends CallerPrincipal {
-    
+import java.io.Serializable;
+import java.security.Principal;
+
+public class WrappingCallerPrincipal extends CallerPrincipal implements Serializable {
+
+    private static final long serialVersionUID = -3852163082966221424L;
+
     private final Principal wrapped;
 
     public WrappingCallerPrincipal(Principal wrapped) {

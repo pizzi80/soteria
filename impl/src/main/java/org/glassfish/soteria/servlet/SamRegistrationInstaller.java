@@ -52,43 +52,15 @@ public class SamRegistrationInstaller implements ServletContainerInitializer, Se
     
     private static final Logger logger =  Logger.getLogger(SamRegistrationInstaller.class.getName());
 
-    // total 1 sec wait
-    private static final int RETRY = 4;
-    private static final int SLEEP_MILLIS = 250;
-
-    private static final void waitForCDI() {
-        for ( int i=1 ; i <= RETRY ; i++ ) {
-            try {
-                CDI.current();
-            } catch (IllegalStateException e) {
-
-                if( i == RETRY ) throw new IllegalStateException();
-
-                try {
-                    Thread.sleep(SLEEP_MILLIS);
-                } catch (InterruptedException ex) {
-                    //Thread.currentThread().interrupt();
-                    // handle appropriately
-                }
-            }
-        }
-    }
-
-
     // --- ServletContainerInitializer ----------------------------------------------------------------------------
 
     @Override
     public void onStartup(Set<Class<?>> classes, ServletContext context) {
 
-        if (classes!=null) classes.stream().map(String::valueOf).forEach(logger::info);
-
         // Obtain a reference to the CdiExtension that was used to see if
         // there's an enabled bean
-
         try {
-            //CDI.current().getBeanManager(); //CdiUtils.getBeanManager();
-
-            waitForCDI();
+            CDI.current(); //CdiUtils.getBeanManager();
 
             if (logger.isLoggable(INFO)) {
                 String version = getClass().getPackage().getImplementationVersion();
@@ -134,13 +106,13 @@ public class SamRegistrationInstaller implements ServletContainerInitializer, Se
     // --- ServletContextListener ----------------------------------------------------------------------------
     
     @Override
-    public void contextInitialized(ServletContextEvent sce) {
+    public void contextInitialized(ServletContextEvent event) {
         // noop
     }
     
     @Override
-    public void contextDestroyed(ServletContextEvent sce) {
-        deregisterServerAuthModule(sce.getServletContext());
+    public void contextDestroyed(ServletContextEvent event) {
+        deregisterServerAuthModule(event.getServletContext());
     }
     
 }

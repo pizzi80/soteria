@@ -20,6 +20,7 @@ package org.glassfish.soteria.cdi;
 import static org.glassfish.soteria.cdi.CdiUtils.addAnnotatedTypes;
 import static org.glassfish.soteria.cdi.CdiUtils.getAnnotation;
 
+import java.beans.Beans;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,16 +87,14 @@ public class CdiExtension implements Extension {
         );
     }
 
-    public <T> void processBean(@Observes ProcessBean<T> eventIn, BeanManager beanManager) {
-
-        ProcessBean<T> event = eventIn; // JDK8 u60 workaround
+    public <T> void processBean(@Observes ProcessBean<T> event, BeanManager beanManager) {
 
         Class<?> beanClass = event.getBean().getBeanClass();
         Optional<EmbeddedIdentityStoreDefinition> optionalEmbeddedStore = getAnnotation(beanManager, event.getAnnotated(), EmbeddedIdentityStoreDefinition.class);
         optionalEmbeddedStore.ifPresent(embeddedIdentityStoreDefinition -> {
             logActivatedIdentityStore(EmbeddedIdentityStore.class, beanClass);
 
-            identityStoreBeans.add(new CdiProducer<IdentityStore>()
+            identityStoreBeans.add( new CdiProducer<IdentityStore>()
                     .scope(ApplicationScoped.class)
                     .beanClass(IdentityStore.class)
                     .types(Object.class, IdentityStore.class, EmbeddedIdentityStore.class)

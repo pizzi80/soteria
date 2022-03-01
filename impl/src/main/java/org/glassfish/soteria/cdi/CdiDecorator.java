@@ -16,8 +16,8 @@
 
 package org.glassfish.soteria.cdi;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
@@ -25,15 +25,7 @@ import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.enterprise.inject.spi.Annotated;
-import jakarta.enterprise.inject.spi.AnnotatedField;
-import jakarta.enterprise.inject.spi.Bean;
-import jakarta.enterprise.inject.spi.BeanManager;
-import jakarta.enterprise.inject.spi.Decorator;
-import jakarta.enterprise.inject.spi.InjectionPoint;
-
-// WIP - Builder for dynanic decorators. May not be needed and/or replaced by
+// WIP - Builder for dynamic decorators. May not be needed and/or replaced by
 // CDI 2.0 bean builder
 // See http://weld.cdi-spec.org/news/2015/02/25/weld-300Alpha5/#_bean_builder_api
 public class CdiDecorator<T> extends CdiProducer<T> implements Decorator<T> {
@@ -68,7 +60,7 @@ public class CdiDecorator<T> extends CdiProducer<T> implements Decorator<T> {
     }
     
     public Set<Annotation> getDelegateQualifiers() {
-        return emptySet();
+        return Set.of();
     }
     
     public CdiDecorator<T> decorator(Class<T> decorator) {
@@ -79,7 +71,7 @@ public class CdiDecorator<T> extends CdiProducer<T> implements Decorator<T> {
     
     public CdiDecorator<T> delegateAndDecoratedType(Type type) {
         delegateType = type;
-        decoratedTypes = asSet(type);
+        decoratedTypes = Set.of(type);
         return this;
     }
     
@@ -90,7 +82,7 @@ public class CdiDecorator<T> extends CdiProducer<T> implements Decorator<T> {
                 beanManager.createAnnotatedType(decorator).getFields().iterator().next(), 
                 this);
             
-            injectionPoints = singleton(decoratorInjectionPoint);
+            injectionPoints = Set.of(decoratorInjectionPoint);
             
             this.beanManager = beanManager;
         
@@ -100,7 +92,7 @@ public class CdiDecorator<T> extends CdiProducer<T> implements Decorator<T> {
     
     private static class DecoratorInjectionPoint implements InjectionPoint {
         
-        private final Set<Annotation> qualifiers = singleton(new DefaultAnnotationLiteral());
+        private final Set<Annotation> qualifiers = Set.of(new DefaultAnnotationLiteral());
         
         private final Type type; 
         private final AnnotatedField<?> annotatedField; 
@@ -136,7 +128,6 @@ public class CdiDecorator<T> extends CdiProducer<T> implements Decorator<T> {
             return true;
         }
 
-        
         public boolean isTransient() {
             return false;
         }

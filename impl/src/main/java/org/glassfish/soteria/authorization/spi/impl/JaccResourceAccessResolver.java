@@ -19,7 +19,11 @@ package org.glassfish.soteria.authorization.spi.impl;
 import org.glassfish.soteria.authorization.JACC;
 import org.glassfish.soteria.authorization.spi.ResourceAccessResolver;
 
-public class JaccResourceAccessResolver implements ResourceAccessResolver {
+import java.io.Serializable;
+
+public class JaccResourceAccessResolver implements ResourceAccessResolver , Serializable {
+
+    private static final long serialVersionUID = -5710259122181927223L;
 
     @Override
     public boolean hasAccessToWebResource(String resource, String... methods) {

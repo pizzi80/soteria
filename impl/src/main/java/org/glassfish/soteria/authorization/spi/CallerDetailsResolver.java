@@ -16,10 +16,11 @@
 
 package org.glassfish.soteria.authorization.spi;
 
+import java.io.Serializable;
 import java.security.Principal;
 import java.util.Set;
 
-public interface CallerDetailsResolver {
+public interface CallerDetailsResolver extends Serializable {
 
     Principal getCallerPrincipal();
 
