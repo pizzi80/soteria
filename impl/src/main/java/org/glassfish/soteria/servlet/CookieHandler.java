@@ -23,16 +23,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.soteria.Utils;
 
 
-public class CookieHandler {
+public enum CookieHandler { INSTANCE;
 
-	public static void saveCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, Integer maxAge, boolean secureOnly, boolean HttpOnly) {
+	public static void saveCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, Integer maxAge, boolean secureOnly, boolean httpOnly) {
 		Cookie cookie = new Cookie(name, value);
-		if (maxAge != null) {
-			cookie.setMaxAge(maxAge);
-		}
+		if (maxAge != null) cookie.setMaxAge(maxAge);
 		cookie.setSecure(secureOnly);
-		cookie.setHttpOnly(HttpOnly);
-		cookie.setPath(Utils.isEmpty(request.getContextPath())? "/" : request.getContextPath());
+		cookie.setHttpOnly(httpOnly);
+		cookie.setPath( Utils.isEmpty(request.getContextPath()) ? "/" : request.getContextPath() );
 
 		response.addCookie(cookie);
 	}

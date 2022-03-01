@@ -20,29 +20,30 @@ import org.glassfish.soteria.authorization.JACC;
 import org.glassfish.soteria.authorization.spi.CallerDetailsResolver;
 
 import javax.security.auth.Subject;
+import java.io.Serializable;
 import java.security.Principal;
+import java.util.List;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
 import static jakarta.security.jacc.PolicyContext.getContextID;
 
-public class ReflectionAndJaccCallerDetailsResolver implements CallerDetailsResolver {
+public class ReflectionAndJaccCallerDetailsResolver implements CallerDetailsResolver , Serializable {
+
+    private static final long serialVersionUID = -6939132848715256303L;
 
     @Override
     public Principal getCallerPrincipal() {
         Subject subject = JACC.getSubject();
 
-        if (subject == null) {
-            return null;
-        }
+        if (subject == null) return null;
 
-        SubjectParser subjectParser = new SubjectParser(getContextID(), emptyList());
+        SubjectParser subjectParser = new SubjectParser( getContextID() , List.of() );
 
         return subjectParser.getCallerPrincipalFromPrincipals(subject.getPrincipals());
     }
 
     @Override
-    public <T extends Principal> Set<T> getPrincipalsByType(Class<T> pType) {
+    public <T extends Principal> Set<T> getPrincipalsByType(Class<T> principalType) {
         Subject subject = JACC.getSubject();
 
         if (subject == null) {
@@ -50,7 +51,7 @@ public class ReflectionAndJaccCallerDetailsResolver implements CallerDetailsReso
             // when returning an empty Set, and when pType == null.
             subject = new Subject();
         }
-        return subject.getPrincipals(pType);
+        return subject.getPrincipals(principalType);
     }
 
     @Override

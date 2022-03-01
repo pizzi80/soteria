@@ -25,12 +25,8 @@ import static org.glassfish.soteria.Utils.isEmpty;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,15 +43,14 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 public class HttpServletRequestDelegator extends HttpServletRequestWrapper {
     
     private static final TimeZone GMT = getTimeZone("GMT");
-    private static final String[] datePatterns = {
+    private static final List<String> datePatterns = List.of(
         "EE, dd MMM yyyy HH:mm:ss zz",
         "EEEE, dd-MMM-yy HH:mm:ss zz",
         "EE MMM  d HH:mm:ss yyyy"
-    };
-    
+    );
+
     private final RequestData requestData;
-    private List<DateFormat> dateFormats;
-    
+
     public HttpServletRequestDelegator(HttpServletRequest request, RequestData requestData) {
         super(request);
         this.requestData = requestData;
@@ -66,7 +61,6 @@ public class HttpServletRequestDelegator extends HttpServletRequestWrapper {
     public Cookie[] getCookies() {
         return requestData.getCookies();
     }
-    
     
     // ### Headers
     
@@ -106,11 +100,9 @@ public class HttpServletRequestDelegator extends HttpServletRequestWrapper {
     @Override
     public int getIntHeader(String name) {
         String header = getHeader(name);
-        
-        if (header == null) {
-            // Spec defines we should return -1 is header doesn't exist
-            return -1;
-        }
+
+        // Spec defines we should return -1 is header doesn't exist
+        if (header == null) return -1;
         
         // If header ain't an integer, spec says a NumberFormatException should be thrown,
         // which is what Integer.parseInt will do.
@@ -120,33 +112,17 @@ public class HttpServletRequestDelegator extends HttpServletRequestWrapper {
     @Override
     public long getDateHeader(String name) {
         String header = getHeader(name);
-        
-        if (header == null) {
-            // Spec defines we should return -1 if header doesn't exist
-            return -1;
-        }
-        
-        if (dateFormats == null) {
-            dateFormats = new ArrayList<>(datePatterns.length);
-            for (String datePattern : datePatterns) {
-                dateFormats.add(createDateFormat(datePattern));
-            }
-        }
-        
-        for (DateFormat dateFormat : dateFormats) {
-            try {
-                return dateFormat.parse(header).getTime();
-            } catch (ParseException e) {
-                // noop
-            }
-        }
-        
+
+        // Spec defines we should return -1 if header doesn't exist
+        if (header == null) return -1;
+
+        Long dateFormat = getDateHeaderAsMillis(header);
+        if (dateFormat != null) return dateFormat;
+
         // If no conversion is possible, spec says an IllegalArgumentException should be thrown
         throw new IllegalArgumentException("Can't convert " + header + " to a date");
     }
-    
-    
-    
+
     // ### Parameters
     
     @Override
@@ -156,13 +132,10 @@ public class HttpServletRequestDelegator extends HttpServletRequestWrapper {
     
     @Override
     public String getParameter(String name) {
-        
+
         String[] values = requestData.getParameters().get(name);
-        if (isEmpty(values)) {
-            return null;
-        }
-        
-        return values[0];
+
+        return isEmpty(values) ? null :  values[0];
     }
     
     @Override
@@ -174,7 +147,6 @@ public class HttpServletRequestDelegator extends HttpServletRequestWrapper {
     public String[] getParameterValues(String name) {
         return getParameterMap().get(name);
     }
-    
     
     // ### Locales
     
@@ -201,10 +173,25 @@ public class HttpServletRequestDelegator extends HttpServletRequestWrapper {
     }
     
     
-    private DateFormat createDateFormat(String pattern) {
-        DateFormat dateFormat = new SimpleDateFormat(pattern, US);
+    // --- Date Utils --------------------------------------------------------------
+
+    private static DateFormat createDateFormatWithTimezone(String pattern) {
+        DateFormat dateFormat = new SimpleDateFormat(pattern,US);
         dateFormat.setTimeZone(GMT);
         return dateFormat;
+    }
+
+    private static final List<DateFormat> dateFormats = datePatterns.stream().map(HttpServletRequestDelegator::createDateFormatWithTimezone).collect(Collectors.toList());
+
+    private static Long getDateHeaderAsMillis(String header) {
+        for (DateFormat dateFormat : dateFormats) {
+            try {
+                return dateFormat.parse(header).getTime();
+            } catch (ParseException e) {
+                // noop
+            }
+        }
+        return null;
     }
 
 }

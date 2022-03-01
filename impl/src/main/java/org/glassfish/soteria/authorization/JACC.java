@@ -16,20 +16,23 @@
 
 package org.glassfish.soteria.authorization;
 
-import jakarta.security.jacc.*;
+import jakarta.security.jacc.PolicyContext;
+import jakarta.security.jacc.WebResourcePermission;
+import jakarta.security.jacc.WebRoleRefPermission;
 
 import javax.security.auth.Subject;
 import java.security.*;
 import java.security.cert.Certificate;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.security.Policy.getPolicy;
-import static java.util.Collections.list;
 
-public class JACC {
+public enum JACC { INSTANCE;
 
-    public static String SUBJECT_CONTAINER_KEY = "javax.security.auth.Subject.container";
+    public static final String EMPTY = "";
+    public static final String SUBJECT_CONTAINER_KEY = "javax.security.auth.Subject.container";
+    public static final Principal[] EMPTY_PRINCIPALS = new Principal[0];
 
     public static Subject getSubject() {
         return getFromContext(SUBJECT_CONTAINER_KEY);
@@ -38,10 +41,8 @@ public class JACC {
     public static boolean isCallerInRole(String role) {
         
         Subject subject = getSubject();
-        
-        if (hasPermission(subject, new WebRoleRefPermission("", role))) {
-            return true;
-        }
+
+        return hasPermission( subject , new WebRoleRefPermission(EMPTY,role) );
         
 //        EJBContext ejbContext = getEJBContext();
 //
@@ -61,8 +62,6 @@ public class JACC {
 //            // ejbContext
 //            return ejbContext.isCallerInRole(role);
 //        }
-        
-        return false;
     }
 
     public static boolean hasAccessToWebResource(String resource, String... methods) {
@@ -74,8 +73,8 @@ public class JACC {
         PermissionCollection permissionCollection = getPermissionCollection(getSubject());
 
         // Resolve any potentially unresolved role permissions
-        permissionCollection.implies(new WebRoleRefPermission("", "nothing"));
-        permissionCollection.implies(new EJBRoleRefPermission("", "nothing"));
+        permissionCollection.implies(new WebRoleRefPermission(EMPTY, "nothing"));
+        //permissionCollection.implies(new EJBRoleRefPermission(EMPTY, "nothing")); // EJB Role ??
         
         // Filter just the roles from all the permissions, which may include things like 
         // java.net.SocketPermission, java.io.FilePermission, and obtain the actual role names.
@@ -95,60 +94,42 @@ public class JACC {
     }
 
     private static Policy getPolicyPrivileged() {
-        return (Policy) AccessController.doPrivileged(new PrivilegedAction<Policy>() {
-            public Policy run() {
-                return getPolicy();
-            }
-        });
+        return AccessController.doPrivileged( (PrivilegedAction<Policy>) () -> getPolicy() );
     }
 
     public static Set<String> filterRoles(PermissionCollection permissionCollection) {
-        Set<String> roles = new HashSet<>();
-        for (Permission permission : list(permissionCollection.elements())) {
-            if (isRolePermission(permission)) {
-                String role = permission.getActions();
 
-                // Note that the WebRoleRefPermission is given for every Servlet in the application, even when
-                // no role refs are used anywhere. This will also include Servlets like the default servlet and the
-                // implicit JSP servlet. So if there are 2 application roles, and 3 application servlets, then 
-                // at least 6 WebRoleRefPermission elements will be present in the collection.
-                if (!roles.contains(role) && isCallerInRole(role)) {
-                    roles.add(role);
-                }
-            }
-        }
-
-        return roles;
+        // Note that the WebRoleRefPermission is given for every Servlet in the application, even when
+        // no role refs are used anywhere. This will also include Servlets like the default servlet and the
+        // implicit JSP servlet. So if there are 2 application roles, and 3 application servlets, then
+        // at least 6 WebRoleRefPermission elements will be present in the collection.
+        return  permissionCollection.elementsAsStream()
+                                    .filter(JACC::isRolePermission)
+                                    .map(Permission::getActions)
+                                    .filter(JACC::isCallerInRole)
+                                    .collect(Collectors.toSet());
     }
 
     public static ProtectionDomain fromSubject(Subject subject) {
-        Principal[] principals = subject != null ?  subject.getPrincipals().toArray(new Principal[subject.getPrincipals().size()]) : new Principal[] {};
-        
         return new ProtectionDomain(
                 new CodeSource(null, (Certificate[]) null),
-                null, null,
-                principals
+                null,
+                null,
+                subject == null ? EMPTY_PRINCIPALS : subject.getPrincipals().toArray(EMPTY_PRINCIPALS)
         );
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T getFromContext(String contextName) {
         try {
-            T ctx = AccessController.doPrivileged(new PrivilegedExceptionAction<T>() {
-                public T run() throws PolicyContextException {
-                    return (T) PolicyContext.getContext(contextName);
-                }
-            });
-            return ctx;
+            return AccessController.doPrivileged((PrivilegedExceptionAction<T>) () -> (T) PolicyContext.getContext(contextName));
         } catch (PrivilegedActionException e) {
             throw new IllegalStateException(e.getCause());
         }
     }
     
     public static boolean isRolePermission(Permission permission) {
-        return permission instanceof WebRoleRefPermission || permission instanceof EJBRoleRefPermission;
+        return permission instanceof WebRoleRefPermission; // || permission instanceof EJBRoleRefPermission;
     }
-    
-  
 
 }

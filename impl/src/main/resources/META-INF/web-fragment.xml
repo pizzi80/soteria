@@ -9,9 +9,11 @@
 
     <distributable />
 
+    <!--
     <ordering>
         <after>
             <others />
         </after>
     </ordering>
+    -->
 </web-fragment>

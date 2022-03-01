@@ -16,18 +16,14 @@
 
 package org.glassfish.soteria.servlet;
 
-import static java.util.Collections.unmodifiableSet;
-
 import java.io.Serializable;
 import java.security.Principal;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
  * This class holds stores "authentication data" (principal and groups).
  * 
- * <p>
- * This is intended as a temporary storage in the HTTP session for this data specifically 
+ * This is intended as a temporary storage in the HTTP session for this data specifically
  * during an HTTP redirect, which is why this class is in the servlet package.
  * 
  * @author Arjan Tijms
@@ -41,7 +37,7 @@ public class AuthenticationData implements Serializable {
     
     public AuthenticationData(Principal principal, Set<String> groups) {
         this.principal = principal;
-        this.groups = unmodifiableSet(new HashSet<>(groups));
+        this.groups = Set.copyOf(groups);
     }
     
     public Principal getPrincipal() {

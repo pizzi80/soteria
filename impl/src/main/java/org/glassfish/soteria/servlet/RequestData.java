@@ -16,20 +16,16 @@
 
 package org.glassfish.soteria.servlet;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
+import java.util.*;
+
 import static java.util.Arrays.copyOf;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.list;
 import static org.glassfish.soteria.Utils.isEmpty;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 
 
 /**
@@ -39,6 +35,8 @@ import jakarta.servlet.http.HttpServletRequest;
  *
  */
 public class RequestData implements Serializable {
+
+    private static final long serialVersionUID = -3030207668350443598L;
 
     private Cookie[] cookies;
     private Map<String, List<String>> headers;
