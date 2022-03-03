@@ -14,16 +14,15 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  */
 
-package org.glassfish.soteria.servlet;
+package org.glassfish.soteria.cdi;
 
-import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.spi.CDI;
-import jakarta.inject.Inject;
+import jakarta.enterprise.inject.spi.Extension;
 import jakarta.servlet.ServletContext;
-import org.glassfish.soteria.cdi.CdiExtension;
 import org.glassfish.soteria.cdi.spi.CDIPerRequestInitializer;
 import org.glassfish.soteria.cdi.spi.impl.LibertyCDIPerRequestInitializer;
 import org.glassfish.soteria.mechanisms.jaspic.HttpBridgeServerAuthModule;
@@ -49,27 +48,19 @@ import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.registerServerAuthM
  * @author Arjan Tijms
  *
  */
-//@WebListener
-@ApplicationScoped
-public class SamRegistrationInstaller { // implements ServletContainerInitializer, ServletContextListener {
+public class SamRegistrationInstaller implements Extension { // implements ServletContainerInitializer, ServletContextListener {
     
     private static final Logger logger =  Logger.getLogger(SamRegistrationInstaller.class.getName());
 
-    private ServletContext context;
-
-    // CDI 1.1+
+    // CDI 3 @Initialized(ApplicationScoped.class)
+    // when on CDI 4 replace with @Startup
     public void onCdiStartup(@Observes @Initialized(ApplicationScoped.class) ServletContext context) {
 
-        this.context = context;
-
-        // CDI Ready
-        logger.info("CDI is ready for Soteria @ ServletContext injected "+context);
-
-        // Obtain a reference to the CdiExtension that was used to see if
-        // there's an enabled bean
+        // double check for CDI
         try {
             CDI.current(); //CdiUtils.getBeanManager();
 
+            // CDI is Ready
             if (logger.isLoggable(INFO)) {
                 String version = getClass().getPackage().getImplementationVersion();
                 logger.log(INFO, "Initializing Soteria {0} for context ''{1}''", new Object[]{version, context.getContextPath()});
@@ -110,17 +101,12 @@ public class SamRegistrationInstaller { // implements ServletContainerInitialize
         }
     }
 
-    @PreDestroy
-    public void onCdiShutdown() {
-        logger.fine("CDI is shutting down for context " + context );
+    // CDI 3 @BeforeDestroyed(ApplicationScoped.class)
+    // when on CDI 4 replace with @Shutdown
+    public void onCdiShutdown(@Observes @BeforeDestroyed(ApplicationScoped.class) ServletContext context) {
+        logger.info("CDI is shutting down for context " + context + " > " + context.getVirtualServerName() + " " + context.getContextPath() );
         deregisterServerAuthModule(context);
     }
-
-    /** never invoked
-    public void onCdiShutdown(@Observes @Destroyed(ApplicationScoped.class) ServletContext context) {
-        logger.fine("CDI is shutting down for context " + context );
-        deregisterServerAuthModule(context);
-    }*/
 
     // --- ServletContainerInitializer ----------------------------------------------------------------------------
 
@@ -134,9 +120,8 @@ public class SamRegistrationInstaller { // implements ServletContainerInitialize
 //    @Override
 //    public void contextInitialized(ServletContextEvent event) {
 //        // noop
-//        logger.fine("contextInitialized");
 //    }
-//
+
 //    @Override
 //    public void contextDestroyed(ServletContextEvent event) {
 //        logger.fine("contextDestroyed");
