@@ -39,6 +39,7 @@ import java.util.Set;
 
 import static java.lang.Boolean.TRUE;
 import static org.glassfish.soteria.Utils.isEmpty;
+import static org.glassfish.soteria.Utils.isNotEmpty;
 
 /**
  * A set of utility methods for using the JASPIC API
@@ -270,7 +271,7 @@ public enum Jaspic { INSTANCE;
 //		if (!isEmpty(registrationId)) AccessController.doPrivileged(
 //				(PrivilegedAction<Boolean>) () -> AuthConfigFactory.getFactory().removeRegistration(registrationId)
 //		);
-		AuthConfigFactory.getFactory().removeRegistration(registrationId);
+		if ( isNotEmpty(registrationId) ) AuthConfigFactory.getFactory().removeRegistration(registrationId);
 	}
 	
 	
