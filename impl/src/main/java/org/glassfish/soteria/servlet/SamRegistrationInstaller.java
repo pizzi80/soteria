@@ -123,7 +123,6 @@ public class SamRegistrationInstaller { // implements ServletContainerInitialize
 //
 //    }
 
-
     // --- ServletContextListener ----------------------------------------------------------------------------
     
 //    @Override

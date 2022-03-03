@@ -25,6 +25,8 @@ import java.util.Map;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
+
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
@@ -133,11 +135,16 @@ public class HttpBridgeServerAuthModule implements ServerAuthModule {
      *
      */
     @Override
-    public void cleanSubject(MessageInfo messageInfo, Subject subject) throws AuthException {
+    public void cleanSubject(MessageInfo messageInfo, Subject subject) {
         HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, subject);
 
-        CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
+//        CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
+//                .cleanSubject(msgContext.getRequest(), msgContext.getResponse(), msgContext);
+
+        CDI.current().select(HttpAuthenticationMechanism.class).get()
                 .cleanSubject(msgContext.getRequest(), msgContext.getResponse(), msgContext);
+
+
     }
 
 }
