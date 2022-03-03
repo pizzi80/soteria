@@ -16,37 +16,31 @@
 
 package org.glassfish.soteria.identitystores;
 
-import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
-import static java.util.stream.Collectors.toMap;
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
-import static org.glassfish.soteria.cdi.AnnotationELPProcessor.evalImmediate;
-import static org.glassfish.soteria.cdi.CdiUtils.getBeanReference;
-import static org.glassfish.soteria.cdi.CdiUtils.jndiLookup;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Stream;
-
 import jakarta.security.enterprise.CallerPrincipal;
 import jakarta.security.enterprise.credential.Credential;
 import jakarta.security.enterprise.credential.UsernamePasswordCredential;
 import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.DatabaseIdentityStoreDefinition;
 import jakarta.security.enterprise.identitystore.IdentityStore;
-import jakarta.security.enterprise.identitystore.IdentityStorePermission;
 import jakarta.security.enterprise.identitystore.PasswordHash;
+
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.stream.Collectors.toMap;
+import static org.glassfish.soteria.cdi.AnnotationELPProcessor.evalImmediate;
+import static org.glassfish.soteria.cdi.CdiUtils.getBeanReference;
+import static org.glassfish.soteria.cdi.CdiUtils.jndiLookup;
 
 public class DatabaseIdentityStore implements IdentityStore {
 
@@ -66,7 +60,7 @@ public class DatabaseIdentityStore implements IdentityStore {
     public DatabaseIdentityStore(DatabaseIdentityStoreDefinition dataBaseIdentityStoreDefinition) {
         this.dataBaseIdentityStoreDefinition = dataBaseIdentityStoreDefinition;
         
-        validationTypes = unmodifiableSet(new HashSet<>(asList(dataBaseIdentityStoreDefinition.useFor())));
+        validationTypes = Set.of(dataBaseIdentityStoreDefinition.useFor());
         hashAlgorithm = getBeanReference(dataBaseIdentityStoreDefinition.hashAlgorithm());
         hashAlgorithm.initialize(
             unmodifiableMap(
@@ -117,10 +111,10 @@ public class DatabaseIdentityStore implements IdentityStore {
     @Override
     public Set<String> getCallerGroups(CredentialValidationResult validationResult) {
 
-        SecurityManager securityManager = System.getSecurityManager();
-        if (securityManager != null) {
-            securityManager.checkPermission(new IdentityStorePermission("getGroups"));
-        }
+//        SecurityManager securityManager = System.getSecurityManager();
+//        if (securityManager != null) {
+//            securityManager.checkPermission(new IdentityStorePermission("getGroups"));
+//        }
 
         DataSource dataSource = getDataSource();
 
@@ -160,20 +154,14 @@ public class DatabaseIdentityStore implements IdentityStore {
         return validationTypes;
     }
     
-    @SuppressWarnings("unchecked")
     private Stream<String> toStream(Object raw) {
-        if (raw instanceof String[]) {
-            return stream((String[])raw);
-        }
-        if (raw instanceof Stream<?>) {
-            return ((Stream<String>) raw).map(s -> s.toString());
-        }
-        
-        return asList(raw.toString()).stream();
+        if (raw instanceof String[]) return Arrays.stream((String[])raw);
+        if (raw instanceof Stream<?>) return ((Stream<?>)raw).map(Objects::toString);
+        return Stream.of(Objects.toString(raw));
     }
 
     private DataSource getDataSource() {
-        DataSource dataSource = null;
+        DataSource dataSource;
         try {
             dataSource = jndiLookup(dataBaseIdentityStoreDefinition.dataSourceLookup());
             if (dataSource == null) {

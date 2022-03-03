@@ -17,36 +17,34 @@
 package org.glassfish.soteria.identitystores;
 
 
-import javax.naming.AuthenticationException;
-import javax.naming.CommunicationException;
-import javax.naming.NamingException;
-import javax.naming.NameNotFoundException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.InvalidSearchControlsException;
-import javax.naming.directory.InvalidSearchFilterException;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
-import javax.naming.ldap.InitialLdapContext;
-import javax.naming.ldap.LdapContext;
-import javax.naming.ldap.LdapName;
 import jakarta.security.enterprise.credential.Credential;
 import jakarta.security.enterprise.credential.UsernamePasswordCredential;
 import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.IdentityStore;
-import jakarta.security.enterprise.identitystore.IdentityStorePermission;
 import jakarta.security.enterprise.identitystore.LdapIdentityStoreDefinition;
-import java.util.*;
 
+import javax.naming.AuthenticationException;
+import javax.naming.CommunicationException;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingException;
+import javax.naming.directory.*;
+import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.LdapName;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Set;
+
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
+import static jakarta.security.enterprise.identitystore.LdapIdentityStoreDefinition.LdapSearchScope;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.*;
 import static javax.naming.Context.*;
 import static javax.naming.directory.SearchControls.ONELEVEL_SCOPE;
 import static javax.naming.directory.SearchControls.SUBTREE_SCOPE;
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
-import static jakarta.security.enterprise.identitystore.LdapIdentityStoreDefinition.LdapSearchScope;
 
 public class LdapIdentityStore implements IdentityStore {
 
@@ -132,10 +130,10 @@ public class LdapIdentityStore implements IdentityStore {
     public Set<String> getCallerGroups(CredentialValidationResult validationResult) {
 
         // Make sure caller has permission to invoke this method
-        SecurityManager securityManager = System.getSecurityManager();
-        if (securityManager != null) {
-            securityManager.checkPermission(new IdentityStorePermission("getGroups"));
-        }
+//        SecurityManager securityManager = System.getSecurityManager();
+//        if (securityManager != null) {
+//            securityManager.checkPermission(new IdentityStorePermission("getGroups"));
+//        }
 
         LdapContext searchContext = createSearchLdapContext();
         try {
@@ -285,7 +283,7 @@ public class LdapIdentityStore implements IdentityStore {
     private SearchControls getCallerSearchControls() {
         SearchControls controls = new SearchControls();
         controls.setSearchScope(convertScopeValue(ldapIdentityStoreDefinition.callerSearchScope()));
-        controls.setCountLimit((long)ldapIdentityStoreDefinition.maxResults());
+        controls.setCountLimit(ldapIdentityStoreDefinition.maxResults());
         controls.setTimeLimit(ldapIdentityStoreDefinition.readTimeout());
         return controls;
     }
@@ -293,7 +291,7 @@ public class LdapIdentityStore implements IdentityStore {
     private SearchControls getGroupSearchControls() {
         SearchControls controls = new SearchControls();
         controls.setSearchScope(convertScopeValue(ldapIdentityStoreDefinition.groupSearchScope()));
-        controls.setCountLimit((long)ldapIdentityStoreDefinition.maxResults());
+        controls.setCountLimit(ldapIdentityStoreDefinition.maxResults());
         controls.setTimeLimit(ldapIdentityStoreDefinition.readTimeout());
         controls.setReturningAttributes(new String[]{ldapIdentityStoreDefinition.groupNameAttribute()});
         return controls;

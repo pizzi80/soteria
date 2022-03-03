@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SoteriaServiceProviders {
 
-    private static final Map<Class<? extends Object>, Object> SERVICE_PROVIDERS = new ConcurrentHashMap<>();
+    private static final Map< Class<?> , Object > SERVICE_PROVIDERS = new ConcurrentHashMap<>();
 
     public static <T> T getServiceProvider(Class<T> serviceProviderClass) {
         return serviceProviderClass.cast(SERVICE_PROVIDERS.computeIfAbsent(

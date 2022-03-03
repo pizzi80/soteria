@@ -33,8 +33,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.list;
+import static org.glassfish.soteria.Utils.addArrayToList;
+import static org.glassfish.soteria.Utils.addEnumerationToList;
 
 public class SubjectParser implements Serializable {
 
@@ -50,80 +50,24 @@ public class SubjectParser implements Serializable {
     private boolean oneToOneMapping;
     private boolean anyAuthenticatedUserRoleMapped = false;
 
-    public static void onFactoryCreated() {
-        tryInitGeronimo();
-    }
-
-    private static void tryInitGeronimo() {
-        try {
-            // Geronimo 3.0.1 contains a protection mechanism to ensure only a Geronimo policy provider is installed.
-            // This protection can be beat by creating an instance of GeronimoPolicyConfigurationFactory once. This instance
-            // will statically register itself with an internal Geronimo class
-
-            geronimoPolicyConfigurationFactoryInstance = Class.forName(className("org.apache.geronimo.security.jacc.mappingprovider.GeronimoPolicyConfiguration")).getDeclaredConstructor().newInstance();
-            geronimoContextToRoleMapping = new ConcurrentHashMap<>();
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public static void onPolicyConfigurationCreated(final String contextID) {
-
-        // Are we dealing with Geronimo?
-        if (geronimoPolicyConfigurationFactoryInstance != null) {
-
-            // PrincipalRoleConfiguration
-            try {
-                Class<?> geronimoPolicyConfigurationClass = Class.forName(className("org.apache.geronimo.security.jacc.mappingprovider.GeronimoPolicyConfiguration"));
-
-                Object geronimoPolicyConfigurationProxy = Proxy.newProxyInstance(SubjectParser.class.getClassLoader(), new Class[]{geronimoPolicyConfigurationClass}, (proxy, method, args) -> {
-
-                    // Take special action on the following method:
-                    // void setPrincipalRoleMapping(Map<Principal, Set<String>> principalRoleMap) throws PolicyContextException;
-                    if (method.getName().equals("setPrincipalRoleMapping")) {
-
-                        geronimoContextToRoleMapping.put(contextID, (Map<Principal, Set<String>>) args[0]);
-
-                    }
-                    return null;
-                });
-
-                // Set the proxy on the GeronimoPolicyConfigurationFactory so it will call us back later with the role mapping via the following method:
-                // public void setPolicyConfiguration(String contextID, GeronimoPolicyConfiguration configuration) {
-                Class.forName(className("org.apache.geronimo.security.jacc.mappingprovider.GeronimoPolicyConfigurationFactory"))
-                        .getMethod("setPolicyConfiguration", String.class, geronimoPolicyConfigurationClass)
-                        .invoke(geronimoPolicyConfigurationFactoryInstance, contextID, geronimoPolicyConfigurationProxy);
-
-            } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                // Ignore
-            }
-        }
-    }
-
     public SubjectParser(String contextID, Collection<String> allDeclaredRoles) {
         // Initialize the groupToRoles map
 
         // Try to get a hold of the proprietary role mapper of each known
         // AS. Sad that this is needed :(
-        if (tryGlassFish(contextID,allDeclaredRoles)) {
-            return;
-        } else if (tryJBoss()) {
-            return;
-        } else if (tryLiberty()) {
-            return;
-        } else if (tryWebLogic(contextID,allDeclaredRoles)) {
-            return;
-        } else if (tryGeronimo(contextID,allDeclaredRoles)) {
-            return;
-        } else {
-            oneToOneMapping = true;
-        }
+        if ( isTomcat() ) oneToOneMapping = true;               // Tomcat first it's Servlet standard and require no special works ... Jetty?
+        else if (tryGlassFish(contextID,allDeclaredRoles));
+        else if (tryJBoss());
+        else if (tryLiberty());
+        else if (tryWebLogic(contextID,allDeclaredRoles));
+        else if (tryGeronimo(contextID,allDeclaredRoles));
+        else oneToOneMapping = true;
+
     }
 
-    public List<String> getMappedRolesFromPrincipals(Principal[] principals) {
-        return getMappedRolesFromPrincipals(asList(principals));
-    }
+//    public List<String> getMappedRolesFromPrincipals(Principal[] principals) {
+//        return getMappedRolesFromPrincipals(asList(principals));
+//    }
 
     public boolean isAnyAuthenticatedUserRoleMapped() {
         return anyAuthenticatedUserRoleMapped;
@@ -166,9 +110,8 @@ public class SubjectParser implements Serializable {
 
             try {
                 Subject subject = (Subject) PolicyContext.getContext(JACC.SUBJECT_CONTAINER_KEY);
-                if (subject == null) {
-                    return emptyList();
-                }
+
+                if (subject == null) return List.of();
 
                 if (isLiberty) {
                     // Liberty is the only known Jakarta EE server that doesn't put the groups in
@@ -227,6 +170,77 @@ public class SubjectParser implements Serializable {
         return roles;
     }
 
+
+    // --- Tomcat --------------------------------------------------------------------
+
+    public static boolean isTomcat() { return IS_TOMCAT; }
+
+    private static final boolean IS_TOMCAT = checkIfIsTomcat();
+
+    private static boolean checkIfIsTomcat() {
+        try {
+            Class.forName("org.apache.tomcat.util.descriptor.web.SecurityConstraint");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    // --- Geronimo ---------------------------------------------------------------------
+
+    public static void onFactoryCreated() {
+        tryInitGeronimo();
+    }
+
+    private static void tryInitGeronimo() {
+        try {
+            // Geronimo 3.0.1 contains a protection mechanism to ensure only a Geronimo policy provider is installed.
+            // This protection can be beat by creating an instance of GeronimoPolicyConfigurationFactory once. This instance
+            // will statically register itself with an internal Geronimo class
+
+            geronimoPolicyConfigurationFactoryInstance = Class.forName(className("org.apache.geronimo.security.jacc.mappingprovider.GeronimoPolicyConfiguration")).getDeclaredConstructor().newInstance();
+            geronimoContextToRoleMapping = new ConcurrentHashMap<>();
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void onPolicyConfigurationCreated(final String contextID) {
+
+        // Are we dealing with Geronimo?
+        if (geronimoPolicyConfigurationFactoryInstance != null) {
+
+            // PrincipalRoleConfiguration
+            try {
+                Class<?> geronimoPolicyConfigurationClass = Class.forName(className("org.apache.geronimo.security.jacc.mappingprovider.GeronimoPolicyConfiguration"));
+
+                Object geronimoPolicyConfigurationProxy = Proxy.newProxyInstance(SubjectParser.class.getClassLoader(), new Class[]{geronimoPolicyConfigurationClass}, (proxy, method, args) -> {
+
+                    // Take special action on the following method:
+                    // void setPrincipalRoleMapping(Map<Principal, Set<String>> principalRoleMap) throws PolicyContextException;
+                    if (method.getName().equals("setPrincipalRoleMapping")) {
+
+                        geronimoContextToRoleMapping.put(contextID, (Map<Principal, Set<String>>) args[0]);
+
+                    }
+                    return null;
+                });
+
+                // Set the proxy on the GeronimoPolicyConfigurationFactory so it will call us back later with the role mapping via the following method:
+                // public void setPolicyConfiguration(String contextID, GeronimoPolicyConfiguration configuration) {
+                Class.forName(className("org.apache.geronimo.security.jacc.mappingprovider.GeronimoPolicyConfigurationFactory"))
+                        .getMethod("setPolicyConfiguration", String.class, geronimoPolicyConfigurationClass)
+                        .invoke(geronimoPolicyConfigurationFactoryInstance, contextID, geronimoPolicyConfigurationProxy);
+
+            } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                // Ignore
+            }
+        }
+    }
+
+    // --- Wildfly / JBoss ---------------------------------------------------------------------------
+
     private boolean tryJBoss() {
         try {
             Class.forName(className("org.jboss.as.security.service.JaccService"), false, Thread.currentThread().getContextClassLoader());
@@ -244,6 +258,8 @@ public class SubjectParser implements Serializable {
         return false;
     }
 
+    // --- OpenLiberty -----------------------------------------------------------------------------------------------
+
     private boolean tryLiberty() {
         isLiberty = (getProperty("wlp.server.name") != null);
 
@@ -256,13 +272,15 @@ public class SubjectParser implements Serializable {
         return isLiberty;
     }
 
+    // -- GlassFish / Payara? ---------------------------------------------------------------------------------
+
     private boolean tryGlassFish(String contextID, Collection<String> allDeclaredRoles) {
 
         try {
             Class<?> SecurityRoleMapperFactoryClass = Class.forName(className("org.glassfish.deployment.common.SecurityRoleMapperFactory"));
 
             Object factoryInstance = Class.forName(className(className("org.glassfish.internal.api.Globals")))
-                    .getMethod("get", SecurityRoleMapperFactoryClass.getClass())
+                    .getMethod("get", SecurityRoleMapperFactoryClass)
                     .invoke(null, SecurityRoleMapperFactoryClass);
 
             Object securityRoleMapperInstance = SecurityRoleMapperFactoryClass.getMethod("getRoleMapper", String.class)
@@ -401,7 +419,7 @@ public class SubjectParser implements Serializable {
      * @param principals
      * @return
      */
-    public List<String> getGroupsFromPrincipals(Iterable<Principal> principals) {
+    public static List<String> getGroupsFromPrincipals(Iterable<Principal> principals) {
         List<String> groups = new ArrayList<>();
 
         for (Principal principal : principals) {
@@ -415,9 +433,9 @@ public class SubjectParser implements Serializable {
         return groups;
     }
 
-    public List<String> principalToGroups(Principal principal) {
+    public static List<String> principalToGroups(Principal principal) {
         List<String> groups = new ArrayList<>();
-        principalToGroups(principal, groups);
+        principalToGroups(principal,groups);
         return groups;
     }
 
@@ -439,10 +457,8 @@ public class SubjectParser implements Serializable {
 
         for (Principal principal : principals) {
             // Do some checks to determine it from vendor specific data
-            Principal vendorCallerPrincipal = getVendorCallerPrincipal(principal, false);
-            if (vendorCallerPrincipal != null) {
-                return vendorCallerPrincipal;
-            }
+            Principal vendorCallerPrincipal = getVendorCallerPrincipal(principal);
+            if (vendorCallerPrincipal != null) return vendorCallerPrincipal;
         }
 
         return null;
@@ -456,17 +472,17 @@ public class SubjectParser implements Serializable {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Principal getVendorCallerPrincipal(Principal principal, boolean isEjb) {
+    private static Principal getVendorCallerPrincipal(Principal principal) {
         switch (principal.getClass().getName()) {
             case "org.glassfish.security.common.PrincipalImpl": // GlassFish/Payara
-                return getAuthenticatedPrincipal(principal, "ANONYMOUS", isEjb);
+                return getAuthenticatedPrincipal(principal, "ANONYMOUS", false);
             case "weblogic.security.principal.WLSUserImpl": // WebLogic
-                return getAuthenticatedPrincipal(principal, "<anonymous>", isEjb);
+                return getAuthenticatedPrincipal(principal, "<anonymous>", false);
             case "com.ibm.ws.security.authentication.principals.WSPrincipal": // Liberty
-                return getAuthenticatedPrincipal(principal, "UNAUTHENTICATED", isEjb);
+                return getAuthenticatedPrincipal(principal, "UNAUTHENTICATED", false);
             // JBoss EAP/WildFly convention 1 - single top level principal of the below type
             case "org.jboss.security.SimplePrincipal":
-                return getAuthenticatedPrincipal(principal, "anonymous", isEjb);
+                return getAuthenticatedPrincipal(principal, "anonymous", false);
             // JBoss EAP/WildFly convention 2 - the one and only principal in group called CallerPrincipal
             case "org.jboss.security.SimpleGroup":
                 if (principal.getName().equals("CallerPrincipal") && principal.getClass().getName().equals("org.jboss.security.SimpleGroup")) {
@@ -480,7 +496,7 @@ public class SubjectParser implements Serializable {
                     }
 
                     if (groupMembers != null && groupMembers.hasMoreElements()) {
-                        return getAuthenticatedPrincipal(groupMembers.nextElement(), "anonymous", isEjb);
+                        return getAuthenticatedPrincipal(groupMembers.nextElement(), "anonymous", false);
                     }
                 }
                 break;
@@ -493,7 +509,7 @@ public class SubjectParser implements Serializable {
                                             .getMethod("getTomcatPrincipal")
                                             .invoke(principal));
 
-                    return getAuthenticatedPrincipal(tomeePrincipal, "guest", isEjb);
+                    return getAuthenticatedPrincipal(tomeePrincipal, "guest", false);
                 } catch (Exception e) {
 
                 }
@@ -507,16 +523,12 @@ public class SubjectParser implements Serializable {
         return null;
     }
 
-    private Principal getAuthenticatedPrincipal(Principal principal, String anonymousCallerName, boolean isEjb) {
-        if (isEjb && anonymousCallerName.equals(principal.getName())) {
-            return null;
-        }
-        return principal;
-
+    private static Principal getAuthenticatedPrincipal(Principal principal, String anonymousCallerName, boolean isEjb) {
+        return (isEjb && anonymousCallerName.equals(principal.getName())) ? null :  principal;
     }
 
     @SuppressWarnings("unchecked")
-    public boolean principalToGroups(Principal principal, List<String> groups) {
+    public static boolean principalToGroups(Principal principal, List<String> groups) {
         switch (principal.getClass().getName()) {
 
             case "org.glassfish.security.common.Group": // GlassFish / Payara
@@ -535,9 +547,8 @@ public class SubjectParser implements Serializable {
                                  .getMethod("members")
                                  .invoke(principal);
 
-                        for (Principal groupPrincipal : list(groupMembers)) {
-                            groups.add(groupPrincipal.getName());
-                        }
+                        addEnumerationToList( groups , groupMembers , Principal::getName );
+
                     } catch (Exception e) {
 
                     }
@@ -548,8 +559,8 @@ public class SubjectParser implements Serializable {
                 }
             case "org.apache.tomee.catalina.TomcatSecurityService$TomcatUser": // TomEE
                 try {
-                    groups.addAll(
-                            asList((String[]) Class.forName(className("org.apache.catalina.realm.GenericPrincipal"))
+
+                    addArrayToList( groups , ((String[]) Class.forName(className("org.apache.catalina.realm.GenericPrincipal"))
                                     .getMethod("getRoles")
                                     .invoke(
                                             Class.forName(className("org.apache.tomee.catalina.TomcatSecurityService$TomcatUser"))

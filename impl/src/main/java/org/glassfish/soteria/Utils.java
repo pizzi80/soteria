@@ -35,6 +35,7 @@ import java.nio.channels.WritableByteChannel;
 import java.security.Principal;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -56,15 +57,8 @@ import jakarta.xml.bind.DatatypeConverter;
  */
 public enum Utils { INSTANCE;
 
-	public final static Method validateRequestMethod = getMethod(
-			HttpAuthenticationMechanism.class,
-			"validateRequest",
-			HttpServletRequest.class, HttpServletResponse.class, HttpMessageContext.class);
 
-	public final static Method cleanSubjectMethod = getMethod(
-			HttpAuthenticationMechanism.class,
-			"cleanSubject",
-			HttpServletRequest.class, HttpServletResponse.class, HttpMessageContext.class);
+	// --- Java Lang ----------------------------------------------------------------------------------------
 
 	public static boolean notNull(Object... objects) {
 		for (Object object : objects) if (object == null) return false;
@@ -101,6 +95,10 @@ public enum Utils { INSTANCE;
 		return collection == null || collection.isEmpty();
 	}
 
+	public static boolean isNotEmpty(Collection<?> collection) {
+		return !isEmpty(collection);
+	}
+
 	/**
 	 * Returns <code>true</code> if the given object equals one of the given objects.
 	 * @param <T> The generic object type.
@@ -110,9 +108,96 @@ public enum Utils { INSTANCE;
 	 */
 	@SafeVarargs
 	public static <T> boolean isOneOf(T object, T... objects) {
-		for (Object other : objects) if (Objects.equals(object, other)) return true;
+		for (Object other : objects) if (Objects.equals(object,other)) return true;
 		return false;
 	}
+
+//	@SuppressWarnings("unchecked")
+//	public static <E> Set<E> unmodifiableSet(Object... values) {
+//		Set<E> set = new HashSet<>();
+//		for (Object value : values) {
+//			if (value instanceof Object[]) for (Object item : (Object[]) value) set.add((E) item);
+//			else if (value instanceof Collection<?>) for (Object item : (Collection<?>) value) set.add((E)item);
+//			else set.add((E)value);
+//		}
+//		return Collections.unmodifiableSet(set);
+//	}
+
+	/**
+	 * Null safe Collections.addAll
+	 */
+	public static <T> void addArrayToList( List<T> list , T[] array ) {
+		if ( array == null || array.length == 0 ) return;
+		Collections.addAll(list,array);
+	}
+
+	public static <T> void addEnumerationToList(List<T> list , Enumeration<T> enumeration  ) {
+		if ( enumeration != null ) enumeration.asIterator().forEachRemaining(list::add);
+	}
+
+	public static <T,E> void addEnumerationToList(List<T> list , Enumeration<E> enumeration , Function<E,T> extractValue ) {
+		if ( enumeration != null ) enumeration.asIterator().forEachRemaining( elem -> list.add( extractValue.apply(elem) ) );
+	}
+
+
+	public static long stream(InputStream input, OutputStream output) throws IOException {
+		try (ReadableByteChannel inputChannel = Channels.newChannel(input);
+			 WritableByteChannel outputChannel = Channels.newChannel(output))
+		{
+			ByteBuffer buffer = ByteBuffer.allocateDirect(10240);
+			long size = 0;
+
+			while (inputChannel.read(buffer) != -1) {
+				buffer.flip();
+				size += outputChannel.write(buffer);
+				buffer.clear();
+			}
+
+			return size;
+		}
+	}
+
+	/**
+	 * Read the given input stream into a byte array. The given input stream will implicitly be closed after streaming,
+	 * regardless of whether an exception is been thrown or not.
+	 * @param input The input stream.
+	 * @return The input stream as a byte array.
+	 * @throws IOException When an I/O error occurs.
+	 */
+	public static byte[] toByteArray(InputStream input) throws IOException {
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		stream(input, output);
+		return output.toByteArray();
+	}
+
+	public static boolean isImplementationOf(Method implementationMethod, Method interfaceMethod) {
+		return
+				interfaceMethod.getDeclaringClass().isAssignableFrom(implementationMethod.getDeclaringClass()) &&
+						interfaceMethod.getName().equals(implementationMethod.getName()) &&
+						Arrays.equals(interfaceMethod.getParameterTypes(), implementationMethod.getParameterTypes());
+	}
+
+	public static Method getMethod(Class<?> base, String name, Class<?>... parameterTypes) {
+		try {
+			// Method literals in Java would be nice
+			return base.getMethod(name, parameterTypes);
+		} catch (NoSuchMethodException | SecurityException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+
+	// --- Servlet ----------------------------------------------------------------------------------
+
+	public final static Method validateRequestMethod = getMethod(
+			HttpAuthenticationMechanism.class,
+			"validateRequest",
+			HttpServletRequest.class, HttpServletResponse.class, HttpMessageContext.class);
+
+	public final static Method cleanSubjectMethod = getMethod(
+			HttpAuthenticationMechanism.class,
+			"cleanSubject",
+			HttpServletRequest.class, HttpServletResponse.class, HttpMessageContext.class);
 
 	@SuppressWarnings("unchecked")
 	public static <T> T getParam(InvocationContext invocationContext, int param) {
@@ -153,11 +238,9 @@ public enum Utils { INSTANCE;
 		return elProcessor;
 	}
 
-	public static CallerPrincipal toCallerPrincipal(Principal principal) {
-		if (principal instanceof CallerPrincipal) {
-			return (CallerPrincipal) principal;
-		}
 
+	public static CallerPrincipal toCallerPrincipal(Principal principal) {
+		if (principal instanceof CallerPrincipal) return (CallerPrincipal) principal;
 		return new WrappingCallerPrincipal(principal);
 	}
 
@@ -179,23 +262,12 @@ public enum Utils { INSTANCE;
 		}
 	}
 
-	private static final Set<String> FACES_AJAX_HEADERS = unmodifiableSet("partial/ajax", "partial/process");
+	private static final Set<String> FACES_AJAX_HEADERS = Set.of("partial/ajax", "partial/process");
 	private static final String FACES_AJAX_REDIRECT_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 			+ "<partial-response><redirect url=\"%s\"></redirect></partial-response>";
 
 	public static boolean isFacesAjaxRequest(HttpServletRequest request) {
 		return FACES_AJAX_HEADERS.contains(request.getHeader("Faces-Request"));
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <E> Set<E> unmodifiableSet(Object... values) {
-		Set<E> set = new HashSet<>();
-		for (Object value : values) {
-			if (value instanceof Object[]) for (Object item : (Object[]) value) set.add((E) item);
-			else if (value instanceof Collection<?>) for (Object item : (Collection<?>) value) set.add((E)item);
-			else set.add((E)value);
-		}
-		return Collections.unmodifiableSet(set);
 	}
 
 	public static String encodeURL(String string) {
@@ -324,50 +396,6 @@ public enum Utils { INSTANCE;
 		}
 	}
 
-	public static long stream(InputStream input, OutputStream output) throws IOException {
-		try (ReadableByteChannel inputChannel = Channels.newChannel(input);
-			 WritableByteChannel outputChannel = Channels.newChannel(output))
-		{
-			ByteBuffer buffer = ByteBuffer.allocateDirect(10240);
-			long size = 0;
 
-			while (inputChannel.read(buffer) != -1) {
-				buffer.flip();
-				size += outputChannel.write(buffer);
-				buffer.clear();
-			}
-
-			return size;
-		}
-	}
-
-	/**
-	 * Read the given input stream into a byte array. The given input stream will implicitly be closed after streaming,
-	 * regardless of whether an exception is been thrown or not.
-	 * @param input The input stream.
-	 * @return The input stream as a byte array.
-	 * @throws IOException When an I/O error occurs.
-	 */
-	public static byte[] toByteArray(InputStream input) throws IOException {
-		ByteArrayOutputStream output = new ByteArrayOutputStream();
-		stream(input, output);
-		return output.toByteArray();
-	}
-
-	public static boolean isImplementationOf(Method implementationMethod, Method interfaceMethod) {
-		return
-				interfaceMethod.getDeclaringClass().isAssignableFrom(implementationMethod.getDeclaringClass()) &&
-						interfaceMethod.getName().equals(implementationMethod.getName()) &&
-						Arrays.equals(interfaceMethod.getParameterTypes(), implementationMethod.getParameterTypes());
-	}
-
-	public static Method getMethod(Class<?> base, String name, Class<?>... parameterTypes) {
-		try {
-			// Method literals in Java would be nice
-			return base.getMethod(name, parameterTypes);
-		} catch (NoSuchMethodException | SecurityException e) {
-			throw new IllegalStateException(e);
-		}
-	}
 
 }

@@ -16,27 +16,24 @@
 
 package org.glassfish.soteria.identitystores;
 
-import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.unmodifiableSet;
-import static java.util.stream.Collectors.toMap;
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import jakarta.security.enterprise.CallerPrincipal;
 import jakarta.security.enterprise.credential.Credential;
 import jakarta.security.enterprise.credential.UsernamePasswordCredential;
 import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.IdentityStore;
-import jakarta.security.enterprise.identitystore.IdentityStorePermission;
-
 import org.glassfish.soteria.identitystores.annotation.Credentials;
 import org.glassfish.soteria.identitystores.annotation.EmbeddedIdentityStoreDefinition;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
+import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
+import static java.util.stream.Collectors.toMap;
 
 public class EmbeddedIdentityStore implements IdentityStore {
 
@@ -59,7 +56,7 @@ public class EmbeddedIdentityStore implements IdentityStore {
                 e -> e.callerName(),
                 e -> e)
         );
-        validationType = unmodifiableSet(new HashSet<>(asList(embeddedIdentityStoreDefinition.useFor())));
+        validationType = Set.of(embeddedIdentityStoreDefinition.useFor());
     }
     
     @Override
@@ -87,10 +84,10 @@ public class EmbeddedIdentityStore implements IdentityStore {
     @Override
     public Set<String> getCallerGroups(CredentialValidationResult validationResult) {
 
-        SecurityManager securityManager = System.getSecurityManager();
-        if (securityManager != null) {
-            securityManager.checkPermission(new IdentityStorePermission("getGroups"));
-        }
+//        SecurityManager securityManager = System.getSecurityManager();
+//        if (securityManager != null) {
+//            securityManager.checkPermission(new IdentityStorePermission("getGroups"));
+//        }
 
         Credentials credentials = callerToCredentials.get(validationResult.getCallerPrincipal().getName());
 

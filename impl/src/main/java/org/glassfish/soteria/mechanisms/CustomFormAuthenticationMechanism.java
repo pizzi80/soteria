@@ -51,17 +51,15 @@ public class CustomFormAuthenticationMechanism implements HttpAuthenticationMech
             IdentityStoreHandler identityStoreHandler = CdiUtils.getBeanReference(IdentityStoreHandler.class);
             
             return httpMessageContext.notifyContainerAboutLogin(
-                    identityStoreHandler.validate(
-                    httpMessageContext.getAuthParameters()
-                                      .getCredential()));
+                identityStoreHandler.validate(httpMessageContext.getAuthParameters().getCredential())
+            );
         }
 		
 		return httpMessageContext.doNothing();
 	}
 	
 	private static boolean hasCredential(HttpMessageContext httpMessageContext) {
-	    return 
-            httpMessageContext.getAuthParameters().getCredential() != null;
+	    return httpMessageContext.getAuthParameters().getCredential() != null;
 	}
 	
     @Override

@@ -16,6 +16,9 @@
 
 package org.glassfish.soteria.servlet;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
@@ -51,6 +54,12 @@ import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.registerServerAuthM
 public class SamRegistrationInstaller implements ServletContainerInitializer, ServletContextListener {
     
     private static final Logger logger =  Logger.getLogger(SamRegistrationInstaller.class.getName());
+
+    // CDI 1.1+
+    public void onCdiStartup(@Observes @Initialized(ApplicationScoped.class) ServletContext context) {
+        // CDI Ready
+        logger.info("CDI is ready for Soteria @ ServletContext "+context);
+    }
 
     // --- ServletContainerInitializer ----------------------------------------------------------------------------
 

@@ -20,6 +20,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Optional.empty;
 import static org.glassfish.soteria.Utils.isEmpty;
+import static org.glassfish.soteria.Utils.isNotEmpty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -56,7 +57,7 @@ public class CdiUtils {
 
         Queue<Annotation> annotations = new LinkedList<>(annotated.getAnnotations());
 
-        while (!annotations.isEmpty()) {
+        while ( !annotations.isEmpty() ) {
             Annotation annotation = annotations.remove();
 
             if (annotation.annotationType().equals(annotationType)) {
@@ -174,29 +175,22 @@ public class CdiUtils {
     }
     
     public static ELProcessor getELProcessor(ELProcessor elProcessor) {
-        if (elProcessor != null) {
-            return elProcessor;
-        }
-        
-        return getELProcessor();
+        return elProcessor != null ? elProcessor : getELProcessor();
     }
     
     public static ELProcessor getELProcessor() {
         ELProcessor elProcessor = new ELProcessor();
         elProcessor.getELManager().addELResolver(getBeanManager().getELResolver());
-        
+
         return elProcessor;
     }
 
     private static <T> Set<Bean<?>> getBeanDefinitions(Class<T> type, boolean optional, BeanManager beanManager) {
         Set<Bean<?>> beans = beanManager.getBeans(type, new AnyAnnotationLiteral());
-        if (!isEmpty(beans)) {
-            return beans;
-        } 
+
+        if ( isNotEmpty(beans) ) return beans;
         
-        if (optional) {
-            return emptySet();
-        } 
+        if (optional) return Set.of();
         
         throw new IllegalStateException("Could not find beans for Type=" + type);
     }

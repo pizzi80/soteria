@@ -49,95 +49,95 @@ import org.glassfish.soteria.mechanisms.HttpMessageContextImpl;
  */
 public class HttpBridgeServerAuthModule implements ServerAuthModule {
 
-        private CallbackHandler handler;
-        private final Class<?>[] supportedMessageTypes = new Class[] { HttpServletRequest.class, HttpServletResponse.class };
-        private final CDIPerRequestInitializer cdiPerRequestInitializer;
-        
-        public HttpBridgeServerAuthModule(CDIPerRequestInitializer cdiPerRequestInitializer) {
-            this.cdiPerRequestInitializer = cdiPerRequestInitializer;
-        }
-        
-        @Override
-        public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler handler, @SuppressWarnings("rawtypes") Map options) throws AuthException {
-            this.handler = handler;
-            // options not supported.
+    private CallbackHandler handler;
+    private final Class<?>[] supportedMessageTypes = new Class[] { HttpServletRequest.class, HttpServletResponse.class };
+    private final CDIPerRequestInitializer cdiPerRequestInitializer;
+
+    public HttpBridgeServerAuthModule(CDIPerRequestInitializer cdiPerRequestInitializer) {
+        this.cdiPerRequestInitializer = cdiPerRequestInitializer;
+    }
+
+    @Override
+    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler handler, Map options) throws AuthException {
+        this.handler = handler;
+        // options not supported.
+    }
+
+    /**
+     * A Servlet Container Profile compliant implementation should return HttpServletRequest and HttpServletResponse, so
+     * the delegation class {@link ServerAuthContext} can choose the right SAM to delegate to.
+     */
+    @Override
+    public Class<?>[] getSupportedMessageTypes() {
+        return supportedMessageTypes;
+    }
+
+    @Override
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException {
+
+        HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, clientSubject);
+
+        if (cdiPerRequestInitializer != null) {
+            cdiPerRequestInitializer.init(msgContext.getRequest());
         }
 
-        /**
-         * A Servlet Container Profile compliant implementation should return HttpServletRequest and HttpServletResponse, so
-         * the delegation class {@link ServerAuthContext} can choose the right SAM to delegate to.
-         */
-        @Override
-        public Class<?>[] getSupportedMessageTypes() {
-            return supportedMessageTypes;
+        AuthenticationStatus status = NOT_DONE;
+        setLastAuthenticationStatus(msgContext.getRequest(), status);
+
+        try {
+            status = CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
+                    .validateRequest(
+                            msgContext.getRequest(),
+                            msgContext.getResponse(),
+                            msgContext);
+        } catch (AuthenticationException e) {
+            // In case of an explicit AuthException, status will
+            // be set to SEND_FAILURE, for any other (non checked) exception
+            // the status will be the default NOT_DONE
+            setLastAuthenticationStatus(msgContext.getRequest(), SEND_FAILURE);
+            throw (AuthException) new AuthException("Authentication failure in HttpAuthenticationMechanism").initCause(e);
         }
 
-        @Override
-        public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException {
-            
-            HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, clientSubject);
-            
+        setLastAuthenticationStatus(msgContext.getRequest(), status);
+
+        return fromAuthenticationStatus(status);
+    }
+
+    @Override
+    public AuthStatus secureResponse(MessageInfo messageInfo, Subject serviceSubject) throws AuthException {
+        HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, null);
+
+        try {
+            AuthenticationStatus status = CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
+                    .secureResponse(
+                            msgContext.getRequest(),
+                            msgContext.getResponse(),
+                            msgContext);
+            AuthStatus authStatus = fromAuthenticationStatus(status);
+            if (authStatus == AuthStatus.SUCCESS) {
+                return AuthStatus.SEND_SUCCESS;
+            }
+            return authStatus;
+        } catch (AuthenticationException e) {
+            throw (AuthException) new AuthException("Secure response failure in HttpAuthenticationMechanism").initCause(e);
+        } finally {
             if (cdiPerRequestInitializer != null) {
-                cdiPerRequestInitializer.init(msgContext.getRequest());
+                cdiPerRequestInitializer.destroy(msgContext.getRequest());
             }
-            
-            AuthenticationStatus status = NOT_DONE;
-            setLastAuthenticationStatus(msgContext.getRequest(), status);
-                
-            try {
-                status = CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
-                            .validateRequest(
-                                msgContext.getRequest(), 
-                                msgContext.getResponse(), 
-                                msgContext);
-            } catch (AuthenticationException e) {
-                // In case of an explicit AuthException, status will
-                // be set to SEND_FAILURE, for any other (non checked) exception
-                // the status will be the default NOT_DONE
-                setLastAuthenticationStatus(msgContext.getRequest(), SEND_FAILURE);
-                throw (AuthException) new AuthException("Authentication failure in HttpAuthenticationMechanism").initCause(e);
-            }
-            
-            setLastAuthenticationStatus(msgContext.getRequest(), status);
-            
-            return fromAuthenticationStatus(status);
         }
 
-        @Override
-        public AuthStatus secureResponse(MessageInfo messageInfo, Subject serviceSubject) throws AuthException {
-            HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, null);
+    }
 
-            try {
-                AuthenticationStatus status = CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
-                                                 .secureResponse(
-                                                     msgContext.getRequest(), 
-                                                     msgContext.getResponse(), 
-                                                     msgContext);
-                AuthStatus authStatus = fromAuthenticationStatus(status);
-                if (authStatus == AuthStatus.SUCCESS) {
-                    return AuthStatus.SEND_SUCCESS;
-                }
-                return authStatus;
-            } catch (AuthenticationException e) {
-                throw (AuthException) new AuthException("Secure response failure in HttpAuthenticationMechanism").initCause(e);
-            } finally {
-                if (cdiPerRequestInitializer != null) {
-                    cdiPerRequestInitializer.destroy(msgContext.getRequest());
-                }
-            }
+    /**
+     * Called in response to a {@link HttpServletRequest#logout()} call.
+     *
+     */
+    @Override
+    public void cleanSubject(MessageInfo messageInfo, Subject subject) throws AuthException {
+        HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, subject);
 
-        }
-
-        /**
-         * Called in response to a {@link HttpServletRequest#logout()} call.
-         *
-         */
-        @Override
-        public void cleanSubject(MessageInfo messageInfo, Subject subject) throws AuthException {
-            HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, subject);
-            
-            CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
-               .cleanSubject(msgContext.getRequest(), msgContext.getResponse(), msgContext);
-        }
+        CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
+                .cleanSubject(msgContext.getRequest(), msgContext.getResponse(), msgContext);
+    }
 
 }

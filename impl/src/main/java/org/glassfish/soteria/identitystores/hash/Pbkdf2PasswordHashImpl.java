@@ -19,12 +19,13 @@ package org.glassfish.soteria.identitystores.hash;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+
+import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-import java.util.Base64;
+
+import java.util.*;
+
 import static java.util.Collections.unmodifiableSet;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -34,12 +35,12 @@ import jakarta.security.enterprise.identitystore.Pbkdf2PasswordHash;
 @Dependent
 public class Pbkdf2PasswordHashImpl implements Pbkdf2PasswordHash {
 
-    private static final Set<String> SUPPORTED_ALGORITHMS = unmodifiableSet(new HashSet<>(asList(
-            "PBKDF2WithHmacSHA224",
-            "PBKDF2WithHmacSHA256",
-            "PBKDF2WithHmacSHA384",
-            "PBKDF2WithHmacSHA512"
-            )));
+    private static final Set<String> SUPPORTED_ALGORITHMS = Set.of(
+        "PBKDF2WithHmacSHA224",
+        "PBKDF2WithHmacSHA256",
+        "PBKDF2WithHmacSHA384",
+        "PBKDF2WithHmacSHA512"
+    );
 
     private static final String DEFAULT_ALGORITHM = "PBKDF2WithHmacSHA256";
 
@@ -66,47 +67,45 @@ public class Pbkdf2PasswordHashImpl implements Pbkdf2PasswordHash {
     @Override
     public void initialize(Map<String, String> parameters) {
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
-            if (entry.getKey().equals(PROPERTY_ALGORITHM)) {
-                if (!SUPPORTED_ALGORITHMS.contains(entry.getValue())) {
-                    throw new IllegalArgumentException("Bad Algorithm parameter: " + entry.getValue());
-                }
-                configuredAlgorithm = entry.getValue();
-            }
-            else if (entry.getKey().equals(PROPERTY_ITERATIONS)) {
-                try {
-                    configuredIterations = Integer.parseInt(entry.getValue());
-                }
-                catch (Exception e) {
-                    throw new IllegalArgumentException("Bad Iterations parameter: " + entry.getValue());
-                }
-                if (configuredIterations < MIN_ITERATIONS) {
-                    throw new IllegalArgumentException("Bad Iterations parameter: " + entry.getValue());
-                }
-            }
-            else if (entry.getKey().equals(PROPERTY_SALTSIZE)) {
-                try {
-                    configuredSaltSizeBytes = Integer.parseInt(entry.getValue());
-                }
-                catch (Exception e) {
-                    throw new IllegalArgumentException("Bad SaltSizeBytes parameter: " + entry.getValue());
-                }
-                if (configuredSaltSizeBytes < MIN_SALT_SIZE) {
-                    throw new IllegalArgumentException("Bad SaltSizeBytes parameter: " + entry.getValue());
-                }
-            }
-            else if (entry.getKey().equals(PROPERTY_KEYSIZE)) {
-                try {
-                    configuredKeySizeBytes = Integer.parseInt(entry.getValue());
-                }
-                catch (Exception e) {
-                    throw new IllegalArgumentException("Bad KeySizeBytes parameter: " + entry.getValue());
-                }
-                if (configuredKeySizeBytes < MIN_KEY_SIZE) {
-                    throw new IllegalArgumentException("Bad KeySizeBytes parameter: " + entry.getValue());
-                }
-            }
-            else {
-                throw new IllegalArgumentException("Unrecognized parameter for Pbkdf2PasswordHash");
+            switch (entry.getKey()) {
+                case PROPERTY_ALGORITHM:
+                    if (!SUPPORTED_ALGORITHMS.contains(entry.getValue())) {
+                        throw new IllegalArgumentException("Bad Algorithm parameter: " + entry.getValue());
+                    }
+                    configuredAlgorithm = entry.getValue();
+                    break;
+                case PROPERTY_ITERATIONS:
+                    try {
+                        configuredIterations = parseInt(entry.getValue());
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Bad Iterations parameter: " + entry.getValue());
+                    }
+                    if (configuredIterations < MIN_ITERATIONS) {
+                        throw new IllegalArgumentException("Bad Iterations parameter: " + entry.getValue());
+                    }
+                    break;
+                case PROPERTY_SALTSIZE:
+                    try {
+                        configuredSaltSizeBytes = parseInt(entry.getValue());
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Bad SaltSizeBytes parameter: " + entry.getValue());
+                    }
+                    if (configuredSaltSizeBytes < MIN_SALT_SIZE) {
+                        throw new IllegalArgumentException("Bad SaltSizeBytes parameter: " + entry.getValue());
+                    }
+                    break;
+                case PROPERTY_KEYSIZE:
+                    try {
+                        configuredKeySizeBytes = parseInt(entry.getValue());
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Bad KeySizeBytes parameter: " + entry.getValue());
+                    }
+                    if (configuredKeySizeBytes < MIN_KEY_SIZE) {
+                        throw new IllegalArgumentException("Bad KeySizeBytes parameter: " + entry.getValue());
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unrecognized parameter for Pbkdf2PasswordHash");
             }
         }
     }
@@ -127,7 +126,8 @@ public class Pbkdf2PasswordHashImpl implements Pbkdf2PasswordHash {
                 encodedPasswordHash.getAlgorithm(),
                 encodedPasswordHash.getIterations(),
                 encodedPasswordHash.getHash().length);
-        return PasswordHashCompare.compareBytes(hashToVerify, encodedPasswordHash.getHash());
+
+        return Arrays.equals( hashToVerify , encodedPasswordHash.getHash() );
     }
 
     private byte[] pbkdf2(char[] password, byte[] salt, String algorithm, int iterations, int keySizeBytes) {
@@ -151,8 +151,6 @@ public class Pbkdf2PasswordHashImpl implements Pbkdf2PasswordHash {
         private byte[] salt;
         private byte[] hash;
         private String encoded;
-
-        private EncodedPasswordHash() {};
 
         EncodedPasswordHash(byte[] hash, byte[] salt, String algorithm, int iterations) {
             this.algorithm = algorithm;
@@ -189,7 +187,7 @@ public class Pbkdf2PasswordHashImpl implements Pbkdf2PasswordHash {
             }
             algorithm = tokens[0];
             try {
-                iterations = Integer.parseInt(tokens[1]);
+                iterations = parseInt(tokens[1]);
                 salt = Base64.getDecoder().decode(tokens[2]);
                 hash = Base64.getDecoder().decode(tokens[3]);
             }

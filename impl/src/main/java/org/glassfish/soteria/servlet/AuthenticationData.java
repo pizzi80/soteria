@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public class AuthenticationData implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -1721928331906552426L;
     
     private final Principal principal;
     private final Set<String> groups;

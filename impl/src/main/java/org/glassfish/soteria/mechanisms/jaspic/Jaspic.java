@@ -16,32 +16,29 @@
 
 package org.glassfish.soteria.mechanisms.jaspic;
 
-import static java.lang.Boolean.TRUE;
-import static org.glassfish.soteria.Utils.isEmpty;
-
-import java.io.IOException;
-import java.security.AccessController;
-import java.security.Principal;
-import java.security.PrivilegedAction;
-import java.util.List;
-import java.util.Set;
-
-import jakarta.security.enterprise.AuthenticationStatus;
-import javax.security.auth.Subject;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.UnsupportedCallbackException;
 import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.callback.CallerPrincipalCallback;
 import jakarta.security.auth.message.callback.GroupPrincipalCallback;
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.module.ServerAuthModule;
+import jakarta.security.enterprise.AuthenticationStatus;
 import jakarta.security.enterprise.authentication.mechanism.http.AuthenticationParameters;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Set;
+
+import static java.lang.Boolean.TRUE;
+import static org.glassfish.soteria.Utils.isEmpty;
 
 /**
  * A set of utility methods for using the JASPIC API
@@ -117,20 +114,21 @@ public enum Jaspic { INSTANCE;
 	}
 
 	public static void cleanSubject(Subject subject) {
-	    if (subject != null) {
-	        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-				subject.getPrincipals().clear();
-				return null;
-			});
-	    }
+		if (subject != null) subject.getPrincipals().clear();
+//		if (subject != null) {
+//	        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+//				subject.getPrincipals().clear();
+//				return null;
+//			});
+//	    }
 	}
 
 	public static boolean isRegisterSession(MessageInfo messageInfo) {
-		return Boolean.valueOf((String)messageInfo.getMap().get(REGISTER_SESSION));
+		return Boolean.parseBoolean((String)messageInfo.getMap().get(REGISTER_SESSION));
 	}
 	
 	public static boolean isProtectedResource(MessageInfo messageInfo) {
-		return Boolean.valueOf((String) messageInfo.getMap().get(IS_MANDATORY));
+		return Boolean.parseBoolean((String) messageInfo.getMap().get(IS_MANDATORY));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -163,15 +161,14 @@ public enum Jaspic { INSTANCE;
 	        throw new IllegalArgumentException("Null callback handler!");
 	    }
 	    try {
-	        if (groups == null || isEmpty(groups) ||
+	        if (	groups == null || isEmpty(groups) ||
 	                (callerPrincipalCallback.getPrincipal() == null && callerPrincipalCallback.getName() == null)) {
 	            // don't handle groups if null/empty or if caller is null
-	            handler.handle(new Callback[] {
-	                    callerPrincipalCallback });
+	            handler.handle(new Callback[] {callerPrincipalCallback });
 	        } else {
 	            handler.handle(new Callback[] {
 	                    callerPrincipalCallback,
-	                    new GroupPrincipalCallback(clientSubject, groups.toArray(new String[groups.size()])) });
+	                    new GroupPrincipalCallback(clientSubject, groups.toArray(new String[0])) });
 	        }
 	    } catch (IOException | UnsupportedCallbackException e) {
 	        // Should not happen
@@ -189,14 +186,10 @@ public enum Jaspic { INSTANCE;
 
 	public static AuthStatus fromAuthenticationStatus(AuthenticationStatus authenticationStatus) {
 	    switch (authenticationStatus) {
-	        case NOT_DONE: case SUCCESS:
-	            return AuthStatus.SUCCESS;
-	        case SEND_FAILURE:
-	            return AuthStatus.SEND_FAILURE;
-	        case SEND_CONTINUE:
-	            return AuthStatus.SEND_CONTINUE;
-	        default:
-	            throw new IllegalStateException("Unhandled status:" + authenticationStatus.name());
+	        case NOT_DONE: case SUCCESS: return AuthStatus.SUCCESS;
+	        case SEND_FAILURE: 			 return AuthStatus.SEND_FAILURE;
+	        case SEND_CONTINUE:          return AuthStatus.SEND_CONTINUE;
+	        default:  throw new IllegalStateException("Unhandled status:" + authenticationStatus.name());
 	    }
 	}
 	
@@ -214,11 +207,13 @@ public enum Jaspic { INSTANCE;
 	
 	/**
 	 * Gets the app context ID from the servlet context.
-	 * 
+	 *
 	 * <p>
 	 * The app context ID is the ID that JASPIC associates with the given application.
 	 * In this case that given application is the web application corresponding to the
 	 * ServletContext.
+	 *
+	 * FIXME: duplicate code with exousia
 	 * 
 	 * @param context the servlet context for which to obtain the JASPIC app context ID
 	 * @return the app context ID for the web application corresponding to the given context
@@ -242,13 +237,21 @@ public enum Jaspic { INSTANCE;
 	public static String registerServerAuthModule(ServerAuthModule serverAuthModule, ServletContext servletContext) {
 		
 	    // Register the factory-factory-factory for the SAM
-	    String registrationId = AccessController.doPrivileged( (PrivilegedAction<String>) () -> AuthConfigFactory.getFactory().registerConfigProvider(
+//	    String registrationId = AccessController.doPrivileged(
+//				(PrivilegedAction<String>) () -> AuthConfigFactory.getFactory().registerConfigProvider(
+//				new DefaultAuthConfigProvider(serverAuthModule),
+//				"HttpServlet",
+//				getAppContextID(servletContext),
+//				"Default single SAM authentication config provider")
+//		);
+
+		String registrationId = AuthConfigFactory.getFactory().registerConfigProvider(
 				new DefaultAuthConfigProvider(serverAuthModule),
 				"HttpServlet",
 				getAppContextID(servletContext),
-				"Default single SAM authentication config provider")
+				"Default single SAM authentication config provider"
 		);
-		
+
 		// Remember the registration ID returned by the factory, so we can unregister the JASPIC module when the web module
 		// is undeployed. JASPIC being the low level API that it is won't do this automatically.
 		servletContext.setAttribute(CONTEXT_REGISTRATION_ID, registrationId);
@@ -264,9 +267,10 @@ public enum Jaspic { INSTANCE;
 	 */
 	public static void deregisterServerAuthModule(ServletContext servletContext) {
 		String registrationId = (String) servletContext.getAttribute(CONTEXT_REGISTRATION_ID);
-		if (!isEmpty(registrationId)) AccessController.doPrivileged(
-				(PrivilegedAction<Boolean>) () -> AuthConfigFactory.getFactory().removeRegistration(registrationId)
-		);
+//		if (!isEmpty(registrationId)) AccessController.doPrivileged(
+//				(PrivilegedAction<Boolean>) () -> AuthConfigFactory.getFactory().removeRegistration(registrationId)
+//		);
+		AuthConfigFactory.getFactory().removeRegistration(registrationId);
 	}
 	
 	
