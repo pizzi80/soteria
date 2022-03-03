@@ -18,27 +18,21 @@ package org.glassfish.soteria.servlet;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.Destroyed;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.spi.CDI;
-import jakarta.servlet.ServletContainerInitializer;
+import jakarta.inject.Inject;
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
-import jakarta.servlet.annotation.WebListener;
 import org.glassfish.soteria.cdi.CdiExtension;
 import org.glassfish.soteria.cdi.spi.CDIPerRequestInitializer;
 import org.glassfish.soteria.cdi.spi.impl.LibertyCDIPerRequestInitializer;
 import org.glassfish.soteria.mechanisms.jaspic.HttpBridgeServerAuthModule;
 import org.glassfish.soteria.mechanisms.jaspic.Jaspic;
 
-import java.util.Set;
 import java.util.logging.Logger;
 
 import static java.util.logging.Level.FINEST;
 import static java.util.logging.Level.INFO;
-import static org.glassfish.soteria.Utils.isEmpty;
 import static org.glassfish.soteria.Utils.isNotEmpty;
 import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.deregisterServerAuthModule;
 import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.registerServerAuthModule;
@@ -61,10 +55,12 @@ public class SamRegistrationInstaller { // implements ServletContainerInitialize
     
     private static final Logger logger =  Logger.getLogger(SamRegistrationInstaller.class.getName());
 
+    @Inject ServletContext context;
+
     // CDI 1.1+
     public void onCdiStartup(@Observes @Initialized(ApplicationScoped.class) ServletContext context) {
         // CDI Ready
-        logger.info("CDI is ready for Soteria @ ServletContext "+context);
+        logger.info("CDI is ready for Soteria @ ServletContext injected "+this.context+" <-> received"+context);
 
         // Obtain a reference to the CdiExtension that was used to see if
         // there's an enabled bean
@@ -111,10 +107,17 @@ public class SamRegistrationInstaller { // implements ServletContainerInitialize
         }
     }
 
-    public void onCdiShutdown(@Observes @Destroyed(ApplicationScoped.class) ServletContext context) {
+    @PreDestroy
+    public void onCdiShutdown() {
         logger.fine("CDI is shutting down for context " + context );
         deregisterServerAuthModule(context);
     }
+
+    /** never invoked
+    public void onCdiShutdown(@Observes @Destroyed(ApplicationScoped.class) ServletContext context) {
+        logger.fine("CDI is shutting down for context " + context );
+        deregisterServerAuthModule(context);
+    }*/
 
     // --- ServletContainerInitializer ----------------------------------------------------------------------------
 
