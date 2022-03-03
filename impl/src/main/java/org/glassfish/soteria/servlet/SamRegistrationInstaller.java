@@ -55,12 +55,15 @@ public class SamRegistrationInstaller { // implements ServletContainerInitialize
     
     private static final Logger logger =  Logger.getLogger(SamRegistrationInstaller.class.getName());
 
-    @Inject ServletContext context;
+    private ServletContext context;
 
     // CDI 1.1+
     public void onCdiStartup(@Observes @Initialized(ApplicationScoped.class) ServletContext context) {
+
+        this.context = context;
+
         // CDI Ready
-        logger.info("CDI is ready for Soteria @ ServletContext injected "+this.context+" <-> received"+context);
+        logger.info("CDI is ready for Soteria @ ServletContext injected "+context);
 
         // Obtain a reference to the CdiExtension that was used to see if
         // there's an enabled bean
