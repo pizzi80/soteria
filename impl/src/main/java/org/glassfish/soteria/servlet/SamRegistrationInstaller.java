@@ -24,6 +24,7 @@ import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.annotation.WebListener;
 import org.glassfish.soteria.cdi.CdiExtension;
 import org.glassfish.soteria.cdi.spi.CDIPerRequestInitializer;
 import org.glassfish.soteria.cdi.spi.impl.LibertyCDIPerRequestInitializer;
@@ -36,6 +37,7 @@ import java.util.logging.Logger;
 import static java.util.logging.Level.FINEST;
 import static java.util.logging.Level.INFO;
 import static org.glassfish.soteria.Utils.isEmpty;
+import static org.glassfish.soteria.Utils.isNotEmpty;
 import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.deregisterServerAuthModule;
 import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.registerServerAuthModule;
 
@@ -51,6 +53,8 @@ import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.registerServerAuthM
  * @author Arjan Tijms
  *
  */
+@WebListener
+@ApplicationScoped
 public class SamRegistrationInstaller implements ServletContainerInitializer, ServletContextListener {
     
     private static final Logger logger =  Logger.getLogger(SamRegistrationInstaller.class.getName());
@@ -97,17 +101,17 @@ public class SamRegistrationInstaller implements ServletContainerInitializer, Se
             
             CDIPerRequestInitializer cdiPerRequestInitializer = null;
             
-            if (!isEmpty(System.getProperty("wlp.server.name"))) {
+            if (isNotEmpty(System.getProperty("wlp.server.name"))) {
                 // Hardcode server check for now. TODO: design/implement proper service loader/SPI for this
                 cdiPerRequestInitializer = new LibertyCDIPerRequestInitializer();
-                logger.log(INFO, "Running on Liberty - installing CDI request scope activator");
+                logger.info("Running on Liberty - installing CDI request scope activator");
             }
             
             registerServerAuthModule(new HttpBridgeServerAuthModule(cdiPerRequestInitializer), context);
           
             // Add a listener so we can process the context destroyed event, which is needed
             // to de-register the SAM correctly.
-            context.addListener(this);
+            //context.addListener(this);
         }
 
     }
@@ -117,10 +121,12 @@ public class SamRegistrationInstaller implements ServletContainerInitializer, Se
     @Override
     public void contextInitialized(ServletContextEvent event) {
         // noop
+        logger.fine("contextInitialized");
     }
     
     @Override
     public void contextDestroyed(ServletContextEvent event) {
+        logger.fine("contextDestroyed");
         deregisterServerAuthModule(event.getServletContext());
     }
     

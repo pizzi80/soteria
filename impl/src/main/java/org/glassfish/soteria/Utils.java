@@ -71,8 +71,9 @@ public enum Utils { INSTANCE;
 	 * @param string The string to be checked on emptiness.
 	 * @return True if the given string is null or is empty.
 	 */
-	public static boolean isEmpty(String string) {
-		return string == null || string.isEmpty();
+	public static boolean isEmpty(String string) {return string == null || string.isEmpty();}
+	public static boolean isNotEmpty(String string) {
+		return !isEmpty(string);
 	}
 
 	/**
@@ -84,6 +85,9 @@ public enum Utils { INSTANCE;
 	public static boolean isEmpty(Object[] array) {
 		return array == null || array.length == 0;
 	}
+	public static boolean isNotEmpty(Object[] array) {
+		return !isEmpty(array);
+	}
 
 	/**
 	 * Returns <code>true</code> if the given collection is null or is empty.
@@ -94,7 +98,6 @@ public enum Utils { INSTANCE;
 	public static boolean isEmpty(Collection<?> collection) {
 		return collection == null || collection.isEmpty();
 	}
-
 	public static boolean isNotEmpty(Collection<?> collection) {
 		return !isEmpty(collection);
 	}
