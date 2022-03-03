@@ -51,7 +51,7 @@ public class HttpBridgeServerAuthModule implements ServerAuthModule {
 
     private CallbackHandler handler;
     private final Class<?>[] supportedMessageTypes = new Class[] { HttpServletRequest.class, HttpServletResponse.class };
-    private final CDIPerRequestInitializer cdiPerRequestInitializer;
+    private final CDIPerRequestInitializer cdiPerRequestInitializer;    // may be null
 
     public HttpBridgeServerAuthModule(CDIPerRequestInitializer cdiPerRequestInitializer) {
         this.cdiPerRequestInitializer = cdiPerRequestInitializer;
