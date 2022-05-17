@@ -141,7 +141,8 @@ public class HttpMessageContextImpl implements HttpMessageContext {
 
     @Override
     public AuthenticationStatus redirect(String location) {
-        Utils.redirect(getResponse(), location);
+        //Utils.redirect(getResponse(), location);
+        Utils.redirect(getRequest(),getResponse(),location);
 
         return SEND_CONTINUE;
     }

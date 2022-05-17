@@ -212,14 +212,6 @@ public enum Utils { INSTANCE;
 		return url.substring(0, url.length() - request.getRequestURI().length()) + request.getContextPath();
 	}
 
-	public static void redirect(HttpServletResponse response, String location) {
-		try {
-			response.sendRedirect(location);
-		} catch (IOException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
 	public static ELProcessor getELProcessor(String name, Object bean) {
 		ELProcessor elProcessor = new ELProcessor();
 		elProcessor.defineBean(name, bean);
@@ -247,6 +239,14 @@ public enum Utils { INSTANCE;
 		return new WrappingCallerPrincipal(principal);
 	}
 
+	public static void redirect(HttpServletResponse response, String location) {
+		try {
+			response.sendRedirect(location);
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	public static void redirect(HttpServletRequest request, HttpServletResponse response, String location) {
 		try {
 			if (isFacesAjaxRequest(request)) {
@@ -266,8 +266,7 @@ public enum Utils { INSTANCE;
 	}
 
 	private static final Set<String> FACES_AJAX_HEADERS = Set.of("partial/ajax", "partial/process");
-	private static final String FACES_AJAX_REDIRECT_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-			+ "<partial-response><redirect url=\"%s\"></redirect></partial-response>";
+	private static final String FACES_AJAX_REDIRECT_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><partial-response><redirect url=\"%s\"></redirect></partial-response>";
 
 	public static boolean isFacesAjaxRequest(HttpServletRequest request) {
 		return FACES_AJAX_HEADERS.contains(request.getHeader("Faces-Request"));
