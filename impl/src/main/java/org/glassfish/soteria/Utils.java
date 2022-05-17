@@ -270,6 +270,7 @@ public enum Utils { INSTANCE;
 
 	public static boolean isFacesAjaxRequest(HttpServletRequest request) {
 		if ( request == null ) return false;
+
 		String facesHeader = request.getHeader("Faces-Request");
 		return facesHeader != null && FACES_AJAX_HEADERS.contains(facesHeader);
 	}
