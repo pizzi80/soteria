@@ -269,7 +269,9 @@ public enum Utils { INSTANCE;
 	private static final String FACES_AJAX_REDIRECT_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><partial-response><redirect url=\"%s\"></redirect></partial-response>";
 
 	public static boolean isFacesAjaxRequest(HttpServletRequest request) {
-		return FACES_AJAX_HEADERS.contains(request.getHeader("Faces-Request"));
+		if ( request == null ) return false;
+		String facesHeader = request.getHeader("Faces-Request");
+		return facesHeader != null && FACES_AJAX_HEADERS.contains(facesHeader);
 	}
 
 	public static String encodeURL(String string) {
