@@ -31,14 +31,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Arjan Tijms
  *
  */
-public class SoteriaServiceProviders {
+public enum SoteriaServiceProviders { ;
 
     private static final Map< Class<?> , Object > SERVICE_PROVIDERS = new ConcurrentHashMap<>();
 
     public static <T> T getServiceProvider(Class<T> serviceProviderClass) {
-        return serviceProviderClass.cast(SERVICE_PROVIDERS.computeIfAbsent(
-            serviceProviderClass,
-            e -> loadService(e)));
+        return serviceProviderClass.cast(SERVICE_PROVIDERS.computeIfAbsent(serviceProviderClass, SoteriaServiceProviders::loadService));
     }
 
     private static <T> T loadService(Class<T> serviceProviderClass) {

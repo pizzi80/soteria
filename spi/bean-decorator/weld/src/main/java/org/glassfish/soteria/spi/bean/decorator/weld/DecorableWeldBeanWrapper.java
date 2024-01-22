@@ -50,7 +50,7 @@ public class DecorableWeldBeanWrapper<T> extends RIBean<T> implements Bean<T>, P
     private final Bean<T> bean;
     private final CurrentInjectionPoint currentInjectionPoint;
     private final boolean isProxyable;
-    private Class<T> type;
+    private final Class<T> type;
 
     private List<Decorator<?>> decorators;
     private Class<T> proxyClass;

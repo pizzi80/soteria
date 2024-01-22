@@ -17,6 +17,7 @@
 package org.glassfish.soteria.authorization;
 
 import jakarta.security.jacc.PolicyContext;
+import jakarta.security.jacc.PolicyContextException;
 import jakarta.security.jacc.WebResourcePermission;
 import jakarta.security.jacc.WebRoleRefPermission;
 
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 
 import static java.security.Policy.getPolicy;
 
-public enum JACC { INSTANCE;
+public enum JACC { ;
 
     public static final String EMPTY = "";
     public static final String SUBJECT_CONTAINER_KEY = "javax.security.auth.Subject.container";
@@ -122,9 +123,10 @@ public enum JACC { INSTANCE;
     @SuppressWarnings("unchecked")
     public static <T> T getFromContext(String contextName) {
         try {
-            return AccessController.doPrivileged((PrivilegedExceptionAction<T>) () -> (T) PolicyContext.getContext(contextName));
-        } catch (PrivilegedActionException e) {
-            throw new IllegalStateException(e.getCause());
+            //return AccessController.doPrivileged((PrivilegedExceptionAction<T>) () -> (T) PolicyContext.getContext(contextName));
+            return (T) PolicyContext.getContext(contextName);
+        } catch (PolicyContextException e) {
+            throw new RuntimeException(e);
         }
     }
     

@@ -314,9 +314,9 @@ public class LoginToContinueInterceptor implements Serializable {
         Set<Annotation> bindings = (Set<Annotation>) invocationContext.getContextData().get("org.jboss.weld.interceptor.bindings");
         if (bindings != null) {
             optionalLoginToContinue = bindings.stream()
-                    .filter(annotation -> annotation.annotationType().equals(LoginToContinue.class))
-                    .findAny()
-                    .map(annotation -> LoginToContinue.class.cast(annotation));
+                                              .filter(annotation -> annotation.annotationType().equals(LoginToContinue.class))
+                                              .findAny()
+                                              .map(LoginToContinue.class::cast);
             
             if (optionalLoginToContinue.isPresent()) {
                 return optionalLoginToContinue.get();

@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.soteria.Utils;
 
 
-public enum CookieHandler { INSTANCE;
+public enum CookieHandler { ;
 
 	public static void saveCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, Integer maxAge, boolean secureOnly, boolean httpOnly) {
 		Cookie cookie = new Cookie(name, value);

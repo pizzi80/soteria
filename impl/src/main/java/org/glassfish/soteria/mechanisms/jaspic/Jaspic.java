@@ -16,6 +16,19 @@
 
 package org.glassfish.soteria.mechanisms.jaspic;
 
+import static java.lang.Boolean.TRUE;
+import static org.glassfish.soteria.Utils.isEmpty;
+import static org.glassfish.soteria.Utils.isNotEmpty;
+
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Set;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
+
 import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.callback.CallerPrincipalCallback;
@@ -29,25 +42,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import javax.security.auth.Subject;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.UnsupportedCallbackException;
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Set;
-
-import static java.lang.Boolean.TRUE;
-import static org.glassfish.soteria.Utils.isEmpty;
-import static org.glassfish.soteria.Utils.isNotEmpty;
-
 /**
  * A set of utility methods for using the JASPIC API
  * 
  * @author Arjan Tijms
  *
  */
-public enum Jaspic { INSTANCE;
+public enum Jaspic { ;
 	
 	public static final String IS_AUTHENTICATION = "org.glassfish.soteria.security.message.request.authentication";
 	public static final String IS_AUTHENTICATION_FROM_FILTER = "org.glassfish.soteria.security.message.request.authenticationFromFilter";
@@ -102,7 +103,7 @@ public enum Jaspic { INSTANCE;
 		return authParameters;
 	}
 	
-	public static void logout(HttpServletRequest request, HttpServletResponse response) {
+	public static void logout(HttpServletRequest request /*, HttpServletResponse response*/) {
 		try {
 			request.logout();
 			// Need to invalidate the session to really logout - request.logout only logs the user out for the *current request*
@@ -132,7 +133,6 @@ public enum Jaspic { INSTANCE;
 		return Boolean.parseBoolean((String) messageInfo.getMap().get(IS_MANDATORY));
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static void setRegisterSession(MessageInfo messageInfo, String username, Set<String> roles) {
 		messageInfo.getMap().put("jakarta.servlet.http.registerSession", TRUE.toString());
 		
@@ -182,16 +182,22 @@ public enum Jaspic { INSTANCE;
     }
 
 	public static AuthenticationStatus getLastAuthenticationStatus(HttpServletRequest request) {
-		return (AuthenticationStatus) request.getAttribute(LAST_AUTH_STATUS);
+		try {
+			return (AuthenticationStatus) request.getAttribute(LAST_AUTH_STATUS);
+		}
+		// Tomcat Parallel Deployment - new webapp version deployed -> return NOT_DONE
+		catch (ClassCastException webAppVersionChanged) {
+			return AuthenticationStatus.NOT_DONE;
+		}
 	}
 
 	public static AuthStatus fromAuthenticationStatus(AuthenticationStatus authenticationStatus) {
-	    switch (authenticationStatus) {
-	        case NOT_DONE: case SUCCESS: return AuthStatus.SUCCESS;
-	        case SEND_FAILURE: 			 return AuthStatus.SEND_FAILURE;
-	        case SEND_CONTINUE:          return AuthStatus.SEND_CONTINUE;
-	        default:  throw new IllegalStateException("Unhandled status:" + authenticationStatus.name());
-	    }
+        return switch (authenticationStatus) {
+            case NOT_DONE, SUCCESS -> AuthStatus.SUCCESS;
+            case SEND_FAILURE -> AuthStatus.SEND_FAILURE;
+            case SEND_CONTINUE -> AuthStatus.SEND_CONTINUE;
+            default -> throw new IllegalStateException("Unhandled status:" + authenticationStatus.name());
+        };
 	}
 	
 	/**
@@ -205,7 +211,7 @@ public enum Jaspic { INSTANCE;
 	public static void setDidAuthentication(HttpServletRequest request) {
 		request.setAttribute(DID_AUTHENTICATION, TRUE);
 	}
-	
+
 	/**
 	 * Gets the app context ID from the servlet context.
 	 *
@@ -220,11 +226,20 @@ public enum Jaspic { INSTANCE;
 	 * @return the app context ID for the web application corresponding to the given context
 	 */
 	public static String getAppContextID(ServletContext context) {
-		return context.getVirtualServerName() + " " + context.getContextPath();
-	}
+
+		// Tomcat parallel deployment have multiple version of the same web application
+//        try {
+//            Class<? extends ServletContext> clazz = (Class<? extends ServletContext>) Class.forName(tomcat_standard_context_clazz);
+//			Method getWebappVersion = clazz.getMethod("getWebappVersion");
+//			String version = (String) getWebappVersion.invoke(context);
+//			return context.getVirtualServerName() + "_" + context.getContextPath() + "_" + version;
+//        } catch (Exception ignored) {}
+
+        return context.getVirtualServerName() + " " + context.getContextPath(); // eg. Catalina/localhost /app
+    }
 	
 	/**
-	 * Registers a server auth module as the one and only module for the application corresponding to
+	 * Register a server auth module as the one and only module for the application corresponding to
 	 * the given servlet context.
 	 * 
 	 * <p>
@@ -261,7 +276,7 @@ public enum Jaspic { INSTANCE;
 	}
 	
 	/**
-	 * Deregisters the server auth module (and encompassing wrappers/factories) that was previously registered via a call
+	 * Deregister the server auth module (and encompassing wrappers/factories) that was previously registered via a call
 	 * to registerServerAuthModule.
 	 * 
 	 * @param servletContext the context of the app for which the module is deregistered
@@ -271,6 +286,7 @@ public enum Jaspic { INSTANCE;
 //		if (!isEmpty(registrationId)) AccessController.doPrivileged(
 //				(PrivilegedAction<Boolean>) () -> AuthConfigFactory.getFactory().removeRegistration(registrationId)
 //		);
+
 		if ( isNotEmpty(registrationId) ) AuthConfigFactory.getFactory().removeRegistration(registrationId);
 	}
 	

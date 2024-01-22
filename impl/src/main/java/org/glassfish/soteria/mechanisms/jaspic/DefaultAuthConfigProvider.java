@@ -69,15 +69,12 @@ public class DefaultAuthConfigProvider implements AuthConfigProvider {
      * The actual factory method that creates the factory used to eventually obtain the delegate for a SAM.
      */
     @Override
-    public ServerAuthConfig getServerAuthConfig(String layer, String appContext, CallbackHandler handler) throws AuthException,
-        SecurityException {
-        return new DefaultServerAuthConfig(layer, appContext, handler == null ? createDefaultCallbackHandler() : handler,
-            providerProperties, serverAuthModule);
+    public ServerAuthConfig getServerAuthConfig(String layer, String appContext, CallbackHandler handler) throws AuthException, SecurityException {
+        return new DefaultServerAuthConfig(layer, appContext, handler == null ? createDefaultCallbackHandler() : handler, providerProperties, serverAuthModule);
     }
 
     @Override
-    public ClientAuthConfig getClientAuthConfig(String layer, String appContext, CallbackHandler handler) throws AuthException,
-        SecurityException {
+    public ClientAuthConfig getClientAuthConfig(String layer, String appContext, CallbackHandler handler) throws AuthException, SecurityException {
         return null;
     }
 
@@ -101,7 +98,7 @@ public class DefaultAuthConfigProvider implements AuthConfigProvider {
         }
 
         try {
-            return (CallbackHandler) Thread.currentThread().getContextClassLoader().loadClass(callBackClassName).newInstance();
+            return (CallbackHandler) Thread.currentThread().getContextClassLoader().loadClass(callBackClassName).getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new AuthException(e.getMessage());
         }

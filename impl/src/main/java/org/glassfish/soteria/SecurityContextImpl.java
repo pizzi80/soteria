@@ -20,6 +20,7 @@ import static jakarta.security.enterprise.AuthenticationStatus.SEND_FAILURE;
 import static jakarta.security.enterprise.AuthenticationStatus.SUCCESS;
 import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.getLastAuthenticationStatus;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.security.Principal;
 import java.util.Set;

@@ -24,35 +24,33 @@ import jakarta.security.enterprise.authentication.mechanism.http.BasicAuthentica
 
 /**
  * An annotation literal for <code>@BasicAuthenticationMechanismDefinition</code>.
- * 
+ *
  */
 @SuppressWarnings("all")
 public class BasicAuthenticationMechanismDefinitionAnnotationLiteral extends AnnotationLiteral<BasicAuthenticationMechanismDefinition> implements BasicAuthenticationMechanismDefinition {
-    
+
     private static final long serialVersionUID = 1L;
 
     private final String realmName;
-    
+
     private boolean hasDeferredExpressions;
 
     public BasicAuthenticationMechanismDefinitionAnnotationLiteral(String realmName) {
         this.realmName = realmName;
     }
-    
+
     public static BasicAuthenticationMechanismDefinition eval(BasicAuthenticationMechanismDefinition in) {
         if (!hasAnyELExpression(in)) {
             return in;
         }
-        
-        BasicAuthenticationMechanismDefinitionAnnotationLiteral out =
-            new BasicAuthenticationMechanismDefinitionAnnotationLiteral(
-                    evalImmediate(in.realmName()));
-        
+
+        BasicAuthenticationMechanismDefinitionAnnotationLiteral out = new BasicAuthenticationMechanismDefinitionAnnotationLiteral(evalImmediate(in.realmName()));
+
         out.setHasDeferredExpressions(hasAnyELExpression(out));
-        
+
         return out;
     }
-    
+
     public static boolean hasAnyELExpression(BasicAuthenticationMechanismDefinition in) {
         return AnnotationELPProcessor.hasAnyELExpression(
                 in.realmName());
@@ -62,7 +60,7 @@ public class BasicAuthenticationMechanismDefinitionAnnotationLiteral extends Ann
     public String realmName() {
         return hasDeferredExpressions? evalELExpression(realmName) : realmName;
     }
-    
+
     public boolean isHasDeferredExpressions() {
         return hasDeferredExpressions;
     }
@@ -70,7 +68,7 @@ public class BasicAuthenticationMechanismDefinitionAnnotationLiteral extends Ann
     public void setHasDeferredExpressions(boolean hasDeferredExpressions) {
         this.hasDeferredExpressions = hasDeferredExpressions;
     }
-    
 
-    
+
+
 }

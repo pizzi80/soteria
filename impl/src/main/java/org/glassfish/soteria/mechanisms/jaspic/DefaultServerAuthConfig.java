@@ -34,14 +34,13 @@ import jakarta.security.auth.message.module.ServerAuthModule;
  */
 public class DefaultServerAuthConfig implements ServerAuthConfig {
 
-    private String layer;
-    private String appContext;
-    private CallbackHandler handler;
-    private Map<String, String> providerProperties;
-    private ServerAuthModule serverAuthModule;
+    private final String layer;
+    private final String appContext;
+    private final CallbackHandler handler;
+    private final Map<String,String> providerProperties;
+    private final ServerAuthModule serverAuthModule;
 
-    public DefaultServerAuthConfig(String layer, String appContext, CallbackHandler handler,
-        Map<String, String> providerProperties, ServerAuthModule serverAuthModule) {
+    public DefaultServerAuthConfig(String layer, String appContext, CallbackHandler handler, Map<String,String> providerProperties, ServerAuthModule serverAuthModule) {
         this.layer = layer;
         this.appContext = appContext;
         this.handler = handler;
@@ -50,8 +49,7 @@ public class DefaultServerAuthConfig implements ServerAuthConfig {
     }
 
     @Override
-    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject,
-        @SuppressWarnings("rawtypes") Map properties) throws AuthException {
+    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map<String,Object> properties) throws AuthException {
         return new DefaultServerAuthContext(handler, serverAuthModule);
     }
 
@@ -88,7 +86,7 @@ public class DefaultServerAuthConfig implements ServerAuthConfig {
         return false;
     }
 
-    public Map<String, String> getProviderProperties() {
+    public Map<String,String> getProviderProperties() {
         return providerProperties;
     }
 

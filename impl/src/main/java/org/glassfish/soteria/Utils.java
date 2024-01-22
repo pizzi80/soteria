@@ -55,8 +55,7 @@ import jakarta.xml.bind.DatatypeConverter;
  * @author Arjan Tijms
  *
  */
-public enum Utils { INSTANCE;
-
+public enum Utils { ;
 
 	// --- Java Lang ----------------------------------------------------------------------------------------
 
@@ -300,10 +299,10 @@ public enum Utils { INSTANCE;
 	 */
 	public static Map<String, List<String>> toParameterMap(String queryString) {
 		String[] parameters = queryString.split(quote("&"));
-		Map<String, List<String>> parameterMap = new LinkedHashMap<>(parameters.length);
+		Map<String, List<String>> parameterMap = new LinkedHashMap<>( (int) (parameters.length/0.75 + 1) );
 
-		for (String parameter : parameters) {
-			if (parameter.contains("=")) {
+		for ( String parameter : parameters ) {
+			if ( parameter.indexOf('=') > -1 ) {
 				String[] pair = parameter.split(quote("="));
 				String key = decodeURL(pair[0]);
 				String value = (pair.length > 1 && !isEmpty(pair[1])) ? decodeURL(pair[1]) : "";
@@ -328,7 +327,7 @@ public enum Utils { INSTANCE;
 			String name = encodeURL(entry.getKey());
 
 			for (String value : entry.getValue()) {
-				if (queryString.length() > 0) {
+				if ( !queryString.isEmpty() ) {
 					queryString.append("&");
 				}
 
@@ -400,7 +399,5 @@ public enum Utils { INSTANCE;
 			throw new IllegalArgumentException(e);
 		}
 	}
-
-
 
 }

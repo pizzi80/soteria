@@ -18,6 +18,7 @@ package org.glassfish.soteria;
 
 import jakarta.security.enterprise.CallerPrincipal;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.security.Principal;
 

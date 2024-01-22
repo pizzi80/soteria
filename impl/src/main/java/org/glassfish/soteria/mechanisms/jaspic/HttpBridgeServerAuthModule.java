@@ -21,6 +21,7 @@ import static jakarta.security.enterprise.AuthenticationStatus.SEND_FAILURE;
 import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.fromAuthenticationStatus;
 import static org.glassfish.soteria.mechanisms.jaspic.Jaspic.setLastAuthenticationStatus;
 
+import java.io.IOException;
 import java.util.Map;
 
 import javax.security.auth.Subject;
@@ -77,7 +78,24 @@ public class HttpBridgeServerAuthModule implements ServerAuthModule {
     @Override
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException {
 
-        HttpMessageContext msgContext = new HttpMessageContextImpl(handler, messageInfo, clientSubject);
+        HttpMessageContext msgContext;
+        try {
+            msgContext = new HttpMessageContextImpl(handler, messageInfo, clientSubject);
+        }
+        // Tomcat Parallel Deployment!
+        // invalidate session cause the user to go to the new version of the web application
+        catch (ClassCastException webAppContextIsChanged) {
+            HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
+
+            request.getSession(true).invalidate();
+            try {
+                ((HttpServletResponse)messageInfo.getResponseMessage()).sendError(HttpServletResponse.SC_FORBIDDEN);
+            } catch (IOException ignored) {}
+
+            setLastAuthenticationStatus(request, SEND_FAILURE);
+            //throw new AuthException("Authentication failure in HttpAuthenticationMechanism", webAppContextIsChanged);
+            return fromAuthenticationStatus(SEND_FAILURE);
+        }
 
         if (cdiPerRequestInitializer != null) {
             cdiPerRequestInitializer.init(msgContext.getRequest());
@@ -88,16 +106,18 @@ public class HttpBridgeServerAuthModule implements ServerAuthModule {
 
         try {
             status = CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
-                    .validateRequest(
-                            msgContext.getRequest(),
-                            msgContext.getResponse(),
-                            msgContext);
-        } catch (AuthenticationException e) {
+                             .validateRequest(
+                                    msgContext.getRequest(),
+                                    msgContext.getResponse(),
+                                    msgContext
+                             );
+        }
+        catch (AuthenticationException e) {
             // In case of an explicit AuthException, status will
             // be set to SEND_FAILURE, for any other (non checked) exception
             // the status will be the default NOT_DONE
             setLastAuthenticationStatus(msgContext.getRequest(), SEND_FAILURE);
-            throw (AuthException) new AuthException("Authentication failure in HttpAuthenticationMechanism").initCause(e);
+            throw new AuthException("Authentication failure in HttpAuthenticationMechanism", e);
         }
 
         setLastAuthenticationStatus(msgContext.getRequest(), status);
@@ -111,10 +131,11 @@ public class HttpBridgeServerAuthModule implements ServerAuthModule {
 
         try {
             AuthenticationStatus status = CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
-                    .secureResponse(
-                            msgContext.getRequest(),
-                            msgContext.getResponse(),
-                            msgContext);
+                                                  .secureResponse(
+                                                      msgContext.getRequest(),
+                                                      msgContext.getResponse(),
+                                                      msgContext
+                                                  );
             AuthStatus authStatus = fromAuthenticationStatus(status);
             if (authStatus == AuthStatus.SUCCESS) {
                 return AuthStatus.SEND_SUCCESS;
@@ -141,8 +162,9 @@ public class HttpBridgeServerAuthModule implements ServerAuthModule {
 //        CdiUtils.getBeanReference(HttpAuthenticationMechanism.class)
 //                .cleanSubject(msgContext.getRequest(), msgContext.getResponse(), msgContext);
 
-        CDI.current().select(HttpAuthenticationMechanism.class).get()
-                .cleanSubject(msgContext.getRequest(), msgContext.getResponse(), msgContext);
+        CDI.current().select(HttpAuthenticationMechanism.class)
+                     .get()
+                     .cleanSubject(msgContext.getRequest(), msgContext.getResponse(), msgContext);
 
 
     }

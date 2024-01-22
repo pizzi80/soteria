@@ -16,24 +16,24 @@
 
 package org.glassfish.soteria.identitystores;
 
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
+import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.Map;
+import java.util.Set;
+
 import jakarta.security.enterprise.CallerPrincipal;
 import jakarta.security.enterprise.credential.Credential;
 import jakarta.security.enterprise.credential.UsernamePasswordCredential;
 import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.IdentityStore;
+
 import org.glassfish.soteria.identitystores.annotation.Credentials;
 import org.glassfish.soteria.identitystores.annotation.EmbeddedIdentityStoreDefinition;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.INVALID_RESULT;
-import static jakarta.security.enterprise.identitystore.CredentialValidationResult.NOT_VALIDATED_RESULT;
-import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptySet;
-import static java.util.stream.Collectors.toMap;
 
 public class EmbeddedIdentityStore implements IdentityStore {
 
@@ -52,10 +52,7 @@ public class EmbeddedIdentityStore implements IdentityStore {
     public EmbeddedIdentityStore(EmbeddedIdentityStoreDefinition embeddedIdentityStoreDefinition) {
 
         this.embeddedIdentityStoreDefinition = embeddedIdentityStoreDefinition;
-        callerToCredentials = stream(embeddedIdentityStoreDefinition.value()).collect(toMap(
-                e -> e.callerName(),
-                e -> e)
-        );
+        callerToCredentials = stream(embeddedIdentityStoreDefinition.value()).collect(toMap(Credentials::callerName, identity()));
         validationType = Set.of(embeddedIdentityStoreDefinition.useFor());
     }
     
@@ -74,7 +71,7 @@ public class EmbeddedIdentityStore implements IdentityStore {
         if (credentials != null && usernamePasswordCredential.getPassword().compareTo(credentials.password())) {
             return new CredentialValidationResult(
                 new CallerPrincipal(credentials.callerName()), 
-                new HashSet<>(asList(credentials.groups()))
+                Set.of(credentials.groups())
             );
         }
 
@@ -91,7 +88,7 @@ public class EmbeddedIdentityStore implements IdentityStore {
 
         Credentials credentials = callerToCredentials.get(validationResult.getCallerPrincipal().getName());
 
-        return credentials != null ? new HashSet<>(asList(credentials.groups())) : emptySet();
+        return credentials != null ? Set.of(credentials.groups()) : emptySet();
     }
 
     public int priority() {

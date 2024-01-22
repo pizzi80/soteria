@@ -97,11 +97,6 @@ public class CdiProducer<T> implements Bean<T>, PassivationCapable {
         return false;
     }
 
-    @Override
-    public boolean isNullable() {
-        return false;
-    }
-    
     protected CdiProducer<T> active(boolean active) {
         return this;
     }

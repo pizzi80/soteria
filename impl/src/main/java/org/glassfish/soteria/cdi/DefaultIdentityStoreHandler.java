@@ -101,22 +101,23 @@ public class DefaultIdentityStoreHandler implements IdentityStoreHandler {
 
         // Ask all stores that were configured for group providing only to get the groups for the
         // authenticated caller
-        CredentialValidationResult finalResult = validationResult; // compiler didn't like validationResult in the enclosed scope
-        AccessController.doPrivileged(new PrivilegedAction<Void>() {
-            public Void run() {
+        //CredentialValidationResult finalResult = validationResult; // compiler didn't like validationResult in the enclosed scope
+        //AccessController.doPrivileged(new PrivilegedAction<Void>() {
+        //    public Void run() {
                 for (IdentityStore authorizationIdentityStore : authorizationIdentityStores) {
-                    groups.addAll(authorizationIdentityStore.getCallerGroups(finalResult));
+                    groups.addAll(authorizationIdentityStore.getCallerGroups(validationResult));
                 }
-                return null;
-            }
-        });
+//                return null;
+        //    }
+        //});
 
         return new CredentialValidationResult(
                 validationResult.getIdentityStoreId(),
                 validationResult.getCallerPrincipal(),
                 validationResult.getCallerDn(),
                 validationResult.getCallerUniqueId(),
-                groups);
+                groups
+        );
     }
 
 }

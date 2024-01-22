@@ -63,7 +63,7 @@ public class SamRegistrationInstaller implements Extension { // implements Servl
             // CDI is Ready
             if (logger.isLoggable(INFO)) {
                 String version = getClass().getPackage().getImplementationVersion();
-                logger.log(INFO, "Initializing Soteria {0} for context ''{1}''", new Object[]{version, context.getContextPath()});
+                logger.log(INFO, "Initializing Soteria {0} for context ''{1}''", new Object[]{version, Jaspic.getAppContextID(context)});
             }
 
         } catch (IllegalStateException e) {
@@ -104,8 +104,12 @@ public class SamRegistrationInstaller implements Extension { // implements Servl
     // CDI 3 @BeforeDestroyed(ApplicationScoped.class)
     // when on CDI 4 replace with @Shutdown
     public void onCdiShutdown(@Observes @BeforeDestroyed(ApplicationScoped.class) ServletContext context) {
-        logger.info("CDI is shutting down for context " + context + " > " + context.getVirtualServerName() + " " + context.getContextPath() );
-        deregisterServerAuthModule(context);
+        // logger.info("CDI is shutting down for context " + context + " > " + Jaspic.getAppContextID(context) );
+
+        // NOTA: per poter supportare il ParallelDeployment non bisogna de-registrare il modulo on shutdown
+        //       altrimenti viene rimosso quello installato dalla nuova versione della WebApp che va a sostituire
+        //       quello attuale
+        // deregisterServerAuthModule(context);
     }
 
     // --- ServletContainerInitializer ----------------------------------------------------------------------------

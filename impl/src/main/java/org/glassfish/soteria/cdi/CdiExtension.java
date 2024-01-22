@@ -70,7 +70,7 @@ public class CdiExtension implements Extension {
     // Note: for now use the highlander rule: "there can be only one" for
     // authentication mechanisms.
     // This could be extended later to support multiple
-    private List<Bean<IdentityStore>> identityStoreBeans = new ArrayList<>();
+    private final List<Bean<IdentityStore>> identityStoreBeans = new ArrayList<>();
     private Bean<HttpAuthenticationMechanism> authenticationMechanismBean;
     private boolean httpAuthenticationMechanismFound;
 

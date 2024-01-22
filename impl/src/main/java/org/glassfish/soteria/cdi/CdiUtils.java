@@ -37,6 +37,8 @@ import jakarta.enterprise.inject.spi.Annotated;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.BeforeBeanDiscovery;
+import jakarta.enterprise.inject.spi.CDI;
+
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
@@ -110,14 +112,15 @@ public class CdiUtils {
     }
     
     public static BeanManager getBeanManager() {
-        BeanManager beanManager = jndiLookup("java:comp/BeanManager");
 
-        if (beanManager == null) {
-            // Servlet containers
-            beanManager = jndiLookup("java:comp/env/BeanManager");
-        }
+//        BeanManager beanManager = jndiLookup("java:comp/BeanManager");
+//        if (beanManager == null) {
+//            // Servlet containers
+//            beanManager = jndiLookup("java:comp/env/BeanManager");
+//        }
+//        return beanManager;
 
-        return beanManager;
+        return CDI.current().getBeanManager();
     }
     
     // 

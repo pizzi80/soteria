@@ -128,9 +128,9 @@ public class RememberMeInterceptor implements Serializable {
             // and send a cookie with a token that can be used
             // to retrieve this stored identity later
             
-            Boolean isRememberMe = true;
+            boolean isRememberMe = true;
             if (rememberMeAnnotation instanceof RememberMeAnnotationLiteral) { // tmp
-                isRememberMe = ((RememberMeAnnotationLiteral)rememberMeAnnotation).isRememberMe();
+                isRememberMe = rememberMeAnnotation.isRememberMe();
             }
             
             if (isRememberMe) {
@@ -181,9 +181,9 @@ public class RememberMeInterceptor implements Serializable {
         Set<Annotation> bindings = (Set<Annotation>) invocationContext.getContextData().get("org.jboss.weld.interceptor.bindings");
         if (bindings != null) {
             optionalRememberMe = bindings.stream()
-                    .filter(annotation -> annotation.annotationType().equals(RememberMe.class))
-                    .findAny()
-                    .map(annotation -> RememberMe.class.cast(annotation));
+                                         .filter(annotation -> annotation.annotationType().equals(RememberMe.class))
+                                         .findAny()
+                                         .map(RememberMe.class::cast);
             
             if (optionalRememberMe.isPresent()) {
                 return RememberMeAnnotationLiteral.eval(optionalRememberMe.get(), elProcessor);

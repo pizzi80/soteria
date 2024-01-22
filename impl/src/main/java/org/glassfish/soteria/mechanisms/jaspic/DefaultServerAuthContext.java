@@ -43,7 +43,7 @@ public class DefaultServerAuthContext implements ServerAuthContext {
 
     public DefaultServerAuthContext(CallbackHandler handler, ServerAuthModule serverAuthModule) throws AuthException {
         this.serverAuthModule = serverAuthModule;
-        serverAuthModule.initialize(null, null, handler, Collections.<String, String> emptyMap());
+        serverAuthModule.initialize(null, null, handler, Collections.emptyMap());
     }
 
     @Override

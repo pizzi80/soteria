@@ -30,6 +30,7 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
+
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.enterprise.AuthenticationStatus;
 import jakarta.security.enterprise.CallerPrincipal;
@@ -39,6 +40,7 @@ import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.glassfish.soteria.Utils;
 import org.glassfish.soteria.mechanisms.jaspic.Jaspic;
@@ -51,9 +53,9 @@ import org.glassfish.soteria.mechanisms.jaspic.Jaspic;
  */
 public class HttpMessageContextImpl implements HttpMessageContext {
 
-    private CallbackHandler handler;
-    private MessageInfo messageInfo;
-    private Subject clientSubject;
+    private final CallbackHandler handler;
+    private final MessageInfo messageInfo;
+    private final Subject clientSubject;
     private AuthenticationParameters authParameters;
 
     private Principal callerPrincipal;
@@ -63,8 +65,46 @@ public class HttpMessageContextImpl implements HttpMessageContext {
         this.handler = handler;
         this.messageInfo = messageInfo;
         this.clientSubject = clientSubject;
-        if (messageInfo != null) {
-            this.authParameters = Jaspic.getAuthParameters(getRequest());
+        try {
+            this.authParameters = messageInfo != null ? Jaspic.getAuthParameters(getRequest()) : new AuthenticationParameters();
+        }
+        // Tomcat Parallel Deployment!
+        // invalidating the session cause the user to go to the new version of the web application
+        catch (ClassCastException webAppContextIsChanged) {
+            // can't be null so create new AuthenticationParameters
+            // this works because we're creating it inside the new classloader
+            this.authParameters = new AuthenticationParameters();
+
+            // clean request.subject / principal etc...
+            Jaspic.cleanSubject(clientSubject);
+
+            // Invalidate session, in this way Tomcat
+            // send the user to the new version of the webapp
+            HttpSession session = getRequest().getSession(false);    // do not create a new session
+            if ( session != null ) session.invalidate();                    // if there was a session, invalidate it
+
+            // Invece di provare a fare redirect o simili
+            // notifico che non bisogna fare nulla e lascio
+            // gestire a Soteria e/o Tomcat.
+            // In pratica non succede nulla e l'utente deve fare cliccare nuovamente login
+//            doNothing();
+            this.callerPrincipal = null;
+            this.groups = null;
+            Jaspic.setLastAuthenticationStatus(getRequest(), NOT_DONE);
+
+            // --- TEST PROVATI CHE NON VANNO BENE --------------------------------------
+            // perchè causano errore o un doppio redirect prima di funzionare
+            //
+            // responseUnauthorized(); // 403 -> 404 -> redirect to index
+
+            // dobbiamo andare su una pagina stateless per evitare che Tomcat dia errore
+            // perchè non riesce a ricreare la sessione
+            // if ( !getResponse().isCommitted() )
+            //    redirect("/login");
+
+            // if ( !getResponse().isCommitted() ) forward("/");
+            // il redirect crea problemi perchè Tomcat prova a ricreare la sessione dopo che la response è stata committed ...
+            // if ( !getResponse().isCommitted() ) redirect("/");
         }
     }
 
@@ -142,7 +182,9 @@ public class HttpMessageContextImpl implements HttpMessageContext {
     @Override
     public AuthenticationStatus redirect(String location) {
         //Utils.redirect(getResponse(), location);
-        Utils.redirect(getRequest(),getResponse(),location);
+
+        if ( !getResponse().isCommitted() )                         // if not committed
+            Utils.redirect(getRequest(),getResponse(),location);    // send redirect
 
         return SEND_CONTINUE;
     }
@@ -151,8 +193,9 @@ public class HttpMessageContextImpl implements HttpMessageContext {
     public AuthenticationStatus forward(String path) {
         try {
             getRequest().getRequestDispatcher(path)
-                    .forward(getRequest(), getResponse());
-        } catch (IOException | ServletException e) {
+                        .forward(getRequest(), getResponse());
+        }
+        catch (IOException | ServletException e) {
             throw new IllegalStateException(e);
         }
 
@@ -195,11 +238,8 @@ public class HttpMessageContextImpl implements HttpMessageContext {
     @Override
     public AuthenticationStatus notifyContainerAboutLogin(CredentialValidationResult result) {
         if (result.getStatus() == VALID) {
-            return notifyContainerAboutLogin(
-                    result.getCallerPrincipal(),
-                    result.getCallerGroups());
-
-        } 
+            return notifyContainerAboutLogin(result.getCallerPrincipal(), result.getCallerGroups());
+        }
             
         return SEND_FAILURE;
     }

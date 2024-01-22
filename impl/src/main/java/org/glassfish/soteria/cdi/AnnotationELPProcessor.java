@@ -35,7 +35,7 @@ public class AnnotationELPProcessor {
             return expression;
         }
         
-        return (String) getELProcessor(getELProcessor).eval(toRawExpression(expression));
+        return getELProcessor(getELProcessor).eval(toRawExpression(expression));
     }
     
     public static boolean evalImmediate(String expression, boolean defaultValue) {
@@ -69,16 +69,15 @@ public class AnnotationELPProcessor {
             return defaultValue;
         }
         
-        return (Integer) getELProcessor(getELProcessor).getValue(toRawExpression(expression), Integer.class);
+        return getELProcessor(getELProcessor).getValue(toRawExpression(expression), Integer.class);
     }
     
-    @SuppressWarnings("unchecked")
     public static <T> T evalImmediate(String expression, T defaultValue) {
         if (!isELExpression(expression) || isDeferredExpression(expression)) {
             return defaultValue;
         }
         
-        return (T) getELProcessor(getELProcessor(null)).eval(toRawExpression(expression));
+        return getELProcessor(getELProcessor(null)).eval(toRawExpression(expression));
     }
     
     public static String emptyIfImmediate(String expression) {
@@ -94,7 +93,7 @@ public class AnnotationELPProcessor {
             return expression;
         }
         
-        return (String) getELProcessor(getELProcessor).eval(toRawExpression(expression));
+        return getELProcessor(getELProcessor).eval(toRawExpression(expression));
     }
     
     public static boolean evalELExpression(String expression, boolean defaultValue) {
@@ -106,7 +105,7 @@ public class AnnotationELPProcessor {
             return defaultValue;
         }
         
-        return (Boolean) getELProcessor(getELProcessor).eval(toRawExpression(expression));
+        return getELProcessor(getELProcessor).eval(toRawExpression(expression));
     }
     
     public static <T> T evalELExpression(String expression, T defaultValue) {
@@ -124,8 +123,7 @@ public class AnnotationELPProcessor {
         // Convert string representations of enums to their target, if possible
         
         // Convert single enum name to single enum
-        if (defaultValue instanceof Enum  && outcome instanceof String) {
-            Enum<?> defaultValueEnum = (Enum<?>) defaultValue;
+        if (defaultValue instanceof Enum<?> defaultValueEnum && outcome instanceof String) {
             Enum<?> enumConstant = Enum.valueOf(defaultValueEnum.getClass(), (String) outcome);
             
             return (T) enumConstant;
@@ -156,12 +154,12 @@ public class AnnotationELPProcessor {
             return defaultValue;
         }
         
-        return (Integer) getELProcessor(getELProcessor).getValue(toRawExpression(expression), Integer.class);
+        return getELProcessor(getELProcessor).getValue(toRawExpression(expression), Integer.class);
     }
     
-    @SafeVarargs
+//    @SafeVarargs
     public static boolean hasAnyELExpression(String... expressions) {
-        return stream(expressions).anyMatch(expr -> isELExpression(expr));
+        return stream(expressions).anyMatch(AnnotationELPProcessor::isELExpression);
     }
     
     private static boolean isELExpression(String expression) {

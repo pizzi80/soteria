@@ -39,7 +39,8 @@ public class WeldBeanDecorator implements BeanDecorator {
         return new DecorableWeldBeanWrapper<>(
             decorableBean,
             type,
-            BeanManagerProxy.unwrap(beanManager));
+            BeanManagerProxy.unwrap(beanManager)
+        );
     }
 
 }

@@ -56,9 +56,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism,
 	        
             return httpMessageContext.notifyContainerAboutLogin(
                     identityStoreHandler.validate(
-                    new UsernamePasswordCredential(
-                        request.getParameter("j_username"), 
-                        new Password(request.getParameter("j_password")))));
+                        new UsernamePasswordCredential(
+                            request.getParameter("j_username"),
+                            new Password(request.getParameter("j_password"))
+                        )
+                    )
+            );
 	    }
 		
 		return httpMessageContext.doNothing();

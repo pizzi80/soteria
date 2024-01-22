@@ -185,11 +185,6 @@ public class RequestDataSerializableTest {
         }
 
         @Override
-        public boolean isRequestedSessionIdFromUrl() {
-            return false;
-        }
-
-        @Override
         public boolean authenticate(HttpServletResponse response) {
             return false;
         }
@@ -345,11 +340,6 @@ public class RequestDataSerializableTest {
         }
 
         @Override
-        public String getRealPath(String path) {
-            return "test";
-        }
-
-        @Override
         public int getRemotePort() {
             return 80;
         }
@@ -402,6 +392,21 @@ public class RequestDataSerializableTest {
         @Override
         public DispatcherType getDispatcherType() {
             return DispatcherType.REQUEST;
+        }
+
+        @Override
+        public String getRequestId() {
+            return null;
+        }
+
+        @Override
+        public String getProtocolRequestId() {
+            return null;
+        }
+
+        @Override
+        public ServletConnection getServletConnection() {
+            return null;
         }
 
     }

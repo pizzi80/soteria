@@ -43,7 +43,6 @@ public class AutoApplySessionInterceptor implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @SuppressWarnings("unchecked")
     @AroundInvoke
     public Object intercept(InvocationContext invocationContext) throws Exception {
         
