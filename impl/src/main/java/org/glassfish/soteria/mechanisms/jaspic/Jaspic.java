@@ -117,12 +117,6 @@ public enum Jaspic { ;
 
 	public static void cleanSubject(Subject subject) {
 		if (subject != null) subject.getPrincipals().clear();
-//		if (subject != null) {
-//	        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-//				subject.getPrincipals().clear();
-//				return null;
-//			});
-//	    }
 	}
 
 	public static boolean isRegisterSession(MessageInfo messageInfo) {
@@ -253,14 +247,6 @@ public enum Jaspic { ;
 	public static String registerServerAuthModule(ServerAuthModule serverAuthModule, ServletContext servletContext) {
 		
 	    // Register the factory-factory-factory for the SAM
-//	    String registrationId = AccessController.doPrivileged(
-//				(PrivilegedAction<String>) () -> AuthConfigFactory.getFactory().registerConfigProvider(
-//				new DefaultAuthConfigProvider(serverAuthModule),
-//				"HttpServlet",
-//				getAppContextID(servletContext),
-//				"Default single SAM authentication config provider")
-//		);
-
 		String registrationId = AuthConfigFactory.getFactory().registerConfigProvider(
 				new DefaultAuthConfigProvider(serverAuthModule),
 				"HttpServlet",
@@ -283,9 +269,6 @@ public enum Jaspic { ;
 	 */
 	public static void deregisterServerAuthModule(ServletContext servletContext) {
 		String registrationId = (String) servletContext.getAttribute(CONTEXT_REGISTRATION_ID);
-//		if (!isEmpty(registrationId)) AccessController.doPrivileged(
-//				(PrivilegedAction<Boolean>) () -> AuthConfigFactory.getFactory().removeRegistration(registrationId)
-//		);
 
 		if ( isNotEmpty(registrationId) ) AuthConfigFactory.getFactory().removeRegistration(registrationId);
 	}

@@ -150,7 +150,7 @@ public class LoginToContinueInterceptor implements Serializable {
         if (isOnInitialProtectedURL(httpMessageContext)) {
             // TODO: request.authenticate() is captured by this as well
             // Use an "initial call tracker interceptor"?
-            
+
             // Save request details and redirect/forward to /login page
             saveRequest(request);
             
@@ -159,11 +159,11 @@ public class LoginToContinueInterceptor implements Serializable {
             // TODO: Use modified request/response for forward to set method to GET and filter out "if-" headers?
             
             if (loginToContinueAnnotation.useForwardToLogin()) {
-                return httpMessageContext.forward(
-                    loginToContinueAnnotation.loginPage());
-            } else {
-                return httpMessageContext.redirect(
-                    getBaseURL(request) + loginToContinueAnnotation.loginPage());
+                return httpMessageContext.forward(loginToContinueAnnotation.loginPage());
+            }
+            else {
+                //System.out.println("request is protected "+httpMessageContext.getRequest().getRequestURL()+" >>> redirect to loginPage");
+                return httpMessageContext.redirect(getBaseURL(request) + loginToContinueAnnotation.loginPage());
             }
         }
         
@@ -214,11 +214,13 @@ public class LoginToContinueInterceptor implements Serializable {
                 if (isEmpty(errorPage)) {
                     return authstatus;
                 }
-                
-                return httpMessageContext.redirect( // TODO: optionally forward?
-                    getBaseURL(request) + errorPage);
-            } else {
-                // Basically SEND_CONTINUE
+
+                // TODO: optionally forward?
+                return httpMessageContext.redirect(getBaseURL(request) + errorPage);
+            }
+
+            // Basically SEND_CONTINUE
+            else {
                 return authstatus;
             }
              
@@ -237,8 +239,9 @@ public class LoginToContinueInterceptor implements Serializable {
             return httpMessageContext
                 .withRequest(new HttpServletRequestDelegator(request, requestData))
                 .notifyContainerAboutLogin(
-                    authenticationData.getPrincipal(), 
-                    authenticationData.getGroups());
+                        authenticationData.getPrincipal(),
+                        authenticationData.getGroups()
+                );
             
         }
        
